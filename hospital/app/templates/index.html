@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>首页 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>欢迎来到医院信息管理系统</h2>
+    <div class="alert alert-success mt-4">
+        您好，{{ user.username }}！当前角色：{{ user.role }}
+    </div>
+    
+    <div class="row mt-5">
+        {% if user.role == 'admin' %}
+        <!-- 管理员可见模块 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">医生管理</h5>
+                    <p class="card-text">管理医生信息，包括添加、修改、删除医生记录。</p>
+                    <a href="{{ url_for('doctor.doctor_list') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">患者管理</h5>
+                    <p class="card-text">管理患者信息，包括添加、修改、删除患者记录。</p>
+                    <a href="{{ url_for('patient.patient_list') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role == 'doctor' or user.role == 'admin' %}
+        <!-- 医生可见模块 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">排班管理</h5>
+                    <p class="card-text">查看和管理医生排班信息。</p>
+                    <a href="{{ url_for('schedule.schedule_list') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">病历管理</h5>
+                    <p class="card-text">管理患者病历，记录诊断和治疗信息。</p>
+                    <a href="{{ url_for('medicalrecord.medicalrecord_list') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if user.role == 'patient' or user.role == 'admin' %}
+        <!-- 患者可见模块 -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">挂号预约</h5>
+                    <p class="card-text">在线预约挂号，选择医生和时间。</p>
+                    <a href="{{ url_for('registration.available_schedules') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">个人中心</h5>
+                    <p class="card-text">查看个人信息、预约记录和就诊历史。</p>
+                    <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-primary">进入</a>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <a href="{{ url_for('auth.logout') }}" class="btn btn-danger mt-3">退出登录</a>
+</div>
+</body>
+</html>

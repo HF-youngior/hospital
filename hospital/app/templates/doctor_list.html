@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>医生管理 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>医生信息列表</h2>
+    <a href="{{ url_for('doctor.add_doctor') }}" class="btn btn-success mb-3">新增医生</a>
+    <table class="table table-bordered table-hover mt-4">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>姓名</th>
+                <th>性别</th>
+                <th>职称</th>
+                <th>所属科室</th>
+                <th>联系电话</th>
+                <th>状态</th>
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for doctor in doctors %}
+            <tr>
+                <td>{{ doctor.doctor_id }}</td>
+                <td>{{ doctor.name }}</td>
+                <td>{{ doctor.gender }}</td>
+                <td>{{ doctor.title }}</td>
+                <td>{{ doctor.department }}</td>
+                <td>{{ doctor.phone }}</td>
+                <td>{{ doctor.status }}</td>
+                <td>
+                    <a href="{{ url_for('doctor.edit_doctor', doctor_id=doctor.doctor_id) }}" class="btn btn-primary btn-sm">编辑</a>
+                    <a href="{{ url_for('doctor.create_doctor_account', doctor_id=doctor.doctor_id) }}" class="btn btn-success btn-sm">创建账号</a>
+                    <form action="{{ url_for('doctor.delete_doctor', doctor_id=doctor.doctor_id) }}" method="post" style="display:inline;" onsubmit="return confirm('确定要删除该医生吗？');">
+                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                    </form>
+                </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    <a href="/" class="btn btn-secondary">返回首页</a>
+</div>
+</body>
+</html> 

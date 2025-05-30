@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>诊疗记录 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>诊疗记录</h2>
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">患者ID: {{ record.patient_id }}</h5>
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>挂号ID</th>
+                        <td>{{ record.registration_id }}</td>
+                    </tr>
+                    <tr>
+                        <th>主诉</th>
+                        <td>{{ record.chief_complaint }}</td>
+                    </tr>
+                    <tr>
+                        <th>现病史</th>
+                        <td>{{ record.present_illness }}</td>
+                    </tr>
+                    <tr>
+                        <th>既往史</th>
+                        <td>{{ record.past_history }}</td>
+                    </tr>
+                    <tr>
+                        <th>过敏史</th>
+                        <td>{{ record.allergy_history }}</td>
+                    </tr>
+                    <tr>
+                        <th>体格检查</th>
+                        <td>{{ record.physical_exam }}</td>
+                    </tr>
+                    <tr>
+                        <th>诊断结论</th>
+                        <td>{{ record.diagnosis }}</td>
+                    </tr>
+                    <tr>
+                        <th>建议</th>
+                        <td>{{ record.suggestion }}</td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h5 class="mt-4">用药明细</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>药品名称</th>
+                        <th>价格</th>
+                        <th>医保报销比例</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in record.medication_details %}
+                    <tr>
+                        <td>{{ detail.drug.name }}</td>
+                        <td>{{ detail.drug.price }}</td>
+                        <td>{{ detail.drug.insurance_rate * 100 }}%</td>
+                        <td>{{ '已支付' if detail.is_paid else '未支付' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if record.medication_details %}
+            <form action="{{ url_for('registration.pay_medication', record_id=record.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-success">一键支付所有药品费用</button>
+            </form>
+            {% endif %}
+
+            <h5 class="mt-4">检查明细</h5>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>检查项目</th>
+                        <th>价格</th>
+                        <th>医保报销比例</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for detail in record.check_details %}
+                    <tr>
+                        <td>{{ detail.check_item.name }}</td>
+                        <td>{{ detail.check_item.price }}</td>
+                        <td>{{ detail.check_item.insurance_rate * 100 }}%</td>
+                        <td>{{ '已支付' if detail.is_paid else '未支付' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% if record.check_details %}
+            <form action="{{ url_for('registration.pay_check', record_id=record.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-success">一键支付所有检查费用</button>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+    <a href="{{ url_for('registration.registration_list') }}" class="btn btn-secondary mt-3">返回</a>
+</div>
+</body>
+</html>

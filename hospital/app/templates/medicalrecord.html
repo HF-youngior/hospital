@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>病历管理 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .detail-row { margin-bottom: 10px; }
+        .add-button { cursor: pointer; color: blue; }
+    </style>
+    <script>
+        function addMedicationRow() {
+            const container = document.getElementById('medication-details');
+            const index = container.getElementsByClassName('detail-row').length;
+            const row = `
+                <div class="detail-row">
+                    <select name="medication_drug_id_${index}" class="form-control mb-2" required>
+                        <option value="">请选择药品</option>
+                        {% for drug in drugs %}
+                        <option value="{{ drug.drug_id }}">{{ drug.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="add-button" onclick="addMedicationRow()">+</span>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', row);
+        }
+
+        function addCheckRow() {
+            const container = document.getElementById('check-details');
+            const index = container.getElementsByClassName('detail-row').length;
+            const row = `
+                <div class="detail-row">
+                    <select name="check_item_id_${index}" class="form-control mb-2" required>
+                        <option value="">请选择检查项目</option>
+                        {% for item in check_items %}
+                        <option value="{{ item.item_id }}">{{ item.name }}</option>
+                        {% endfor %}
+                    </select>
+                    <span class="add-button" onclick="addCheckRow()">+</span>
+                </div>
+            `;
+            container.insertAdjacentHTML('beforeend', row);
+        }
+    </script>
+</head>
+<body>
+<div class="container mt-5">
+    <h2>病历管理</h2>
+
+    {% if not patient_id %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">今日挂号病人列表</h5>
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>挂号ID</th>
+                                <th>患者ID</th>
+                                <th>患者姓名</th>
+                                <th>科室</th>
+                                <th>时间段</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reg in registrations %}
+                            <tr>
+                                <td>{{ reg.registration_id }}</td>
+                                <td>{{ reg.patient_id }}</td>
+                                <td>{{ reg.patient.name }}</td>
+                                <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
+                                <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
+                                <td>{{ reg.visit_status }}</td>
+                                <td>
+                                    {% if reg.visit_status == '待就诊' %}
+                                    <a href="{{ url_for('medicalrecord.consult', registration_id=reg.registration_id) }}" class="btn btn-primary btn-sm">看诊</a>
+                                    {% else %}
+                                    <span class="text-muted">已完成</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if not registrations %}
+                    <p class="text-muted">今日暂无挂号病人。</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
+    </div>
+    {% endif %}
+
+    {% if patient_id %}
+    <div class="row mt-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">新建诊疗记录</h5>
+                    <form method="POST" action="{{ url_for('medicalrecord.save') }}">
+                        <input type="hidden" name="record_id" value="{{ record.id if record else '' }}">
+                        <input type="hidden" name="patient_id" value="{{ patient_id }}">
+                        <input type="hidden" name="registration_id" value="{{ registration_id }}">
+
+                        <table class="table table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th>患者ID</th>
+                                    <td><input type="text" class="form-control" value="{{ patient_id }}" readonly></td>
+                                </tr>
+                                <tr>
+                                    <th>挂号ID</th>
+                                    <td><input type="text" class="form-control" value="{{ registration_id }}" readonly></td>
+                                </tr>
+                                <tr>
+                                    <th>主诉</th>
+                                    <td><textarea class="form-control" id="chief_complaint" name="chief_complaint" rows="3" required>{{ record.chief_complaint if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>现病史</th>
+                                    <td><textarea class="form-control" id="present_illness" name="present_illness" rows="3">{{ record.present_illness if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>既往史</th>
+                                    <td><textarea class="form-control" id="past_history" name="past_history" rows="3">{{ record.past_history if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>过敏史</th>
+                                    <td><textarea class="form-control" id="allergy_history" name="allergy_history" rows="3">{{ record.allergy_history if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>体格检查</th>
+                                    <td><textarea class="form-control" id="physical_exam" name="physical_exam" rows="3">{{ record.physical_exam if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>诊断结论</th>
+                                    <td><textarea class="form-control" id="diagnosis" name="diagnosis" rows="3">{{ record.diagnosis if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>建议</th>
+                                    <td><textarea class="form-control" id="suggestion" name="suggestion" rows="3">{{ record.suggestion if record else '' }}</textarea></td>
+                                </tr>
+                                <tr>
+                                    <th>用药明细</th>
+                                    <td>
+                                        <div id="medication-details">
+                                            <div class="detail-row">
+                                                <select name="medication_drug_id_0" class="form-control mb-2" required>
+                                                    <option value="">请选择药品</option>
+                                                    {% for drug in drugs %}
+                                                    <option value="{{ drug.drug_id }}">{{ drug.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <span class="add-button" onclick="addMedicationRow()">+</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <th>检查明细</th>
+                                    <td>
+                                        <div id="check-details">
+                                            <div class="detail-row">
+                                                <select name="check_item_id_0" class="form-control mb-2" required>
+                                                    <option value="">请选择检查项目</option>
+                                                    {% for item in check_items %}
+                                                    <option value="{{ item.item_id }}">{{ item.name }}</option>
+                                                    {% endfor %}
+                                                </select>
+                                                <span class="add-button" onclick="addCheckRow()">+</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <button type="submit" class="btn btn-primary mt-3">保存</button>
+                        <a href="{{ url_for('medicalrecord.medicalrecord_list') }}" class="btn btn-secondary mt-3">返回</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>
