@@ -70,7 +70,7 @@
                 </tbody>
             </table>
             {% if record.medication_details %}
-            <form action="{{ url_for('registration.pay_medication', record_id=record.id) }}" method="POST" style="display:inline;">
+            <form action="{{ url_for('registration.pay_medication', registration_id=record.registration_id) }}" method="POST" style="display:inline;">
                 <button type="submit" class="btn btn-success">一键支付所有药品费用</button>
             </form>
             {% endif %}
@@ -97,7 +97,7 @@
                 </tbody>
             </table>
             {% if record.check_details %}
-            <form action="{{ url_for('registration.pay_check', record_id=record.id) }}" method="POST" style="display:inline;">
+            <form action="{{ url_for('registration.pay_check', registration_id=record.registration_id) }}" method="POST" style="display:inline;">
                 <button type="submit" class="btn btn-success">一键支付所有检查费用</button>
             </form>
             {% endif %}
