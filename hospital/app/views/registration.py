@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
-from app.models import Schedule, Registration, Patient, Doctor, Payment, PaymentDetail, MedicalRecord, Drug, CheckItem, MedicationDetail, CheckDetail, db
+from app.models import Schedule, Registration, Patient, Doctor, Payment, MedicalRecord, Drug, CheckItem, MedicationDetail, CheckDetail, db
 from datetime import datetime
 from sqlalchemy import desc
 
@@ -95,7 +95,6 @@ def make_registration(schedule_id):
                 patient_id=patient_id,
                 schedule_id=schedule_id,
                 reg_time=datetime.now(),
-                reg_type='线上预约',
                 visit_status='待就诊'
             )
             schedule.remain_slots -= 1
@@ -103,8 +102,7 @@ def make_registration(schedule_id):
             print(f"Make Registration: Schedule ID: {schedule_id}, Remain Slots: {schedule.remain_slots}")
 
             payment = Payment(
-                patient_id=patient_id,
-                record_id=None,
+                registration_id=registration.registration_id,
                 fee_type='挂号费',
                 insurance_amount=insurance_amount,
                 self_pay_amount=self_pay_amount,
@@ -113,15 +111,6 @@ def make_registration(schedule_id):
                 pay_status='已支付'
             )
             db.session.add_all([registration, payment])
-            db.session.flush()
-            payment_detail = PaymentDetail(
-                payment_id=payment.payment_id,
-                business_id=registration.registration_id,
-                fee_type='挂号费',
-                amount=reg_fee,
-                detail_status='已支付'
-            )
-            db.session.add(payment_detail)
             db.session.commit()
             flash('挂号预约成功！')
             return redirect(url_for('registration.registration_list'))
@@ -146,31 +135,16 @@ def cancel_registration(registration_id):
         return redirect(url_for('registration.registration_list'))
 
     try:
-        # 查询所有与挂号相关的 PaymentDetail 记录
-        payment_details = PaymentDetail.query.filter_by(
-            business_id=registration.registration_id, fee_type='挂号费'
-        ).all()
-        payment_ids = set()  # 记录所有相关的 payment_id
-        if payment_details:
-            for payment_detail in payment_details:
-                payment_ids.add(payment_detail.payment_id)
-
-            # 检查并删除所有引用这些 payment_id 的 PaymentDetail 记录
-            for payment_id in payment_ids:
-                all_related_details = PaymentDetail.query.filter_by(
-                    payment_id=payment_id
-                ).all()
-                if len(all_related_details) > 1:
-                    print(f"Warning: Multiple PaymentDetail records found for payment_id={payment_id}: {[d.detail_id for d in all_related_details]}")
-                for related_detail in all_related_details:
-                    db.session.delete(related_detail)
-
-                # 删除对应的 Payment 记录
-                payment = Payment.query.get(payment_id)
-                if payment:
-                    patient = Patient.query.get(registration.patient_id)
-                    patient.insurance_balance += payment.insurance_amount
-                    db.session.delete(payment)
+        # 查询挂号费支付记录
+        payment = Payment.query.filter_by(
+            registration_id=registration.registration_id,
+            fee_type='挂号费',
+            pay_status='已支付'
+        ).first()
+        if payment:
+            patient = Patient.query.get(registration.patient_id)
+            patient.insurance_balance += payment.insurance_amount
+            db.session.delete(payment)
 
         # 更新挂号状态和余号
         registration.schedule.remain_slots += 1
@@ -184,21 +158,21 @@ def cancel_registration(registration_id):
         print(f"Error cancelling registration: {str(e)}")
     return redirect(url_for('registration.registration_list'))
 
-@registration_bp.route('/pay/medication/<int:record_id>', methods=['POST'])
+@registration_bp.route('/pay/medication/<int:registration_id>', methods=['POST'])
 @login_required
 @role_required('patient')
-def pay_medication(record_id):
-    record = MedicalRecord.query.get_or_404(record_id)
-    if record.patient_id != current_user.patient_id:
+def pay_medication(registration_id):
+    registration = Registration.query.get_or_404(registration_id)
+    if registration.patient_id != current_user.patient_id:
         flash('您无权操作此记录')
         return redirect(url_for('registration.registration_list'))
 
-    medication_details = MedicationDetail.query.filter_by(record_id=record_id).all()
+    medication_details = MedicationDetail.query.filter_by(registration_id=registration_id).all()
     if not medication_details:
         flash('没有需要支付的药品')
         return redirect(url_for('registration.registration_list'))
 
-    patient = Patient.query.get(record.patient_id)
+    patient = Patient.query.get(registration.patient_id)
     total_amount = 0
     for detail in medication_details:
         drug = Drug.query.get(detail.drug_id)
@@ -214,8 +188,7 @@ def pay_medication(record_id):
 
     try:
         payment = Payment(
-            patient_id=patient.patient_id,
-            record_id=record_id,
+            registration_id=registration_id,
             fee_type='药品费',
             insurance_amount=insurance_amount,
             self_pay_amount=self_pay_amount,
@@ -224,17 +197,6 @@ def pay_medication(record_id):
             pay_status='已支付'
         )
         db.session.add(payment)
-        db.session.flush()
-        for detail in medication_details:
-            drug = Drug.query.get(detail.drug_id)
-            payment_detail = PaymentDetail(
-                payment_id=payment.payment_id,
-                business_id=detail.detail_id,
-                fee_type='药品费',
-                amount=drug.price,
-                detail_status='已支付'
-            )
-            db.session.add(payment_detail)
         patient.insurance_balance -= insurance_amount
         db.session.commit()
         flash('药品费用支付成功')
@@ -243,21 +205,21 @@ def pay_medication(record_id):
         flash(f'药品费用支付失败：{str(e)}')
     return redirect(url_for('registration.registration_list'))
 
-@registration_bp.route('/pay/check/<int:record_id>', methods=['POST'])
+@registration_bp.route('/pay/check/<int:registration_id>', methods=['POST'])
 @login_required
 @role_required('patient')
-def pay_check(record_id):
-    record = MedicalRecord.query.get_or_404(record_id)
-    if record.patient_id != current_user.patient_id:
+def pay_check(registration_id):
+    registration = Registration.query.get_or_404(registration_id)
+    if registration.patient_id != current_user.patient_id:
         flash('您无权操作此记录')
         return redirect(url_for('registration.registration_list'))
 
-    check_details = CheckDetail.query.filter_by(record_id=record_id).all()
+    check_details = CheckDetail.query.filter_by(registration_id=registration_id).all()
     if not check_details:
         flash('没有需要支付的检查项目')
         return redirect(url_for('registration.registration_list'))
 
-    patient = Patient.query.get(record.patient_id)
+    patient = Patient.query.get(registration.patient_id)
     total_amount = 0
     for detail in check_details:
         item = CheckItem.query.get(detail.item_id)
@@ -273,8 +235,7 @@ def pay_check(record_id):
 
     try:
         payment = Payment(
-            patient_id=patient.patient_id,
-            record_id=record_id,
+            registration_id=registration_id,
             fee_type='检查费',
             insurance_amount=insurance_amount,
             self_pay_amount=self_pay_amount,
@@ -283,17 +244,6 @@ def pay_check(record_id):
             pay_status='已支付'
         )
         db.session.add(payment)
-        db.session.flush()
-        for detail in check_details:
-            item = CheckItem.query.get(detail.item_id)
-            payment_detail = PaymentDetail(
-                payment_id=payment.payment_id,
-                business_id=detail.detail_id,
-                fee_type='检查费',
-                amount=item.price,
-                detail_status='已支付'
-            )
-            db.session.add(payment_detail)
         patient.insurance_balance -= insurance_amount
         db.session.commit()
         flash('检查费用支付成功')
@@ -307,19 +257,24 @@ def pay_check(record_id):
 @role_required('patient')
 def view_medical_record(registration_id):
     record = MedicalRecord.query.filter_by(registration_id=registration_id).first_or_404()
-    if record.patient_id != current_user.patient_id:
+    registration = Registration.query.get_or_404(registration_id)
+    if registration.patient_id != current_user.patient_id:
         flash('您无权查看此记录')
         return redirect(url_for('registration.registration_list'))
 
     for detail in record.medication_details:
-        payment = PaymentDetail.query.filter_by(
-            business_id=detail.detail_id, fee_type='药品费', detail_status='已支付'
+        payment = Payment.query.filter_by(
+            registration_id=registration_id,
+            fee_type='药品费',
+            pay_status='已支付'
         ).first()
         detail.is_paid = bool(payment)
 
     for detail in record.check_details:
-        payment = PaymentDetail.query.filter_by(
-            business_id=detail.detail_id, fee_type='检查费', detail_status='已支付'
+        payment = Payment.query.filter_by(
+            registration_id=registration_id,
+            fee_type='检查费',
+            pay_status='已支付'
         ).first()
         detail.is_paid = bool(payment)
 
