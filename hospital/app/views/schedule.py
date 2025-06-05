@@ -44,7 +44,7 @@ def add_schedule():
             doctor_id=form.doctor_id.data,
             date=form.date.data,
             time_slot=form.time_slot.data,
-            department=doctor.department,  # 从医生信息获取科室
+            # department=doctor.department,  # 从医生信息获取科室
             room_address=form.room_address.data,
             reg_fee=form.reg_fee.data,
             total_slots=form.total_slots.data,

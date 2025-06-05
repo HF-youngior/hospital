@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择医生 - {{ department_name }} - 在线挂号</title>
+    <!-- 引入 Bootstrap CSS (CDN 示例) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- (可选) 引入 Font Awesome CSS (CDN 示例) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- (可选) 如果您有自定义的CSS文件 -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/your_custom_style.css') }}"> -->
+
+    <!-- (可选) 导入 flash 消息宏 -->
+    {% from "_macros.html" import render_messages with context %}
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-10 col-lg-8">
+
+                {# 显示 Flask 的 flash 消息 #}
+                {% if get_flashed_messages(with_categories=true) %}
+                    {{ render_messages(get_flashed_messages(with_categories=true)) }}
+                {% endif %}
+
+                <div class="card shadow-sm">
+                    <div class="card-header bg-info text-white">
+                        <h4 class="mb-0">
+                            <i class="fas fa-user-md me-2"></i>
+                            选择医生 (科室: {{ department_name }})
+                        </h4>
+                    </div>
+                    <div class="card-body">
+                        {% if doctors %}
+                            <p class="text-muted">请从下方列表中选择一位医生，以查看其排班信息或进行挂号。</p>
+                            <div class="list-group">
+                                {% for doctor in doctors %}
+                                    <div class="list-group-item list-group-item-action">
+                                        <div class="d-flex w-100 justify-content-between align-items-center">
+                                            <div>
+                                                <h5 class="mb-1">{{ doctor.name }} <small class="text-muted">- {{ doctor.title }}</small></h5>
+                                                <p class="mb-1">专长: {{ doctor.specialty }}</p>
+                                            </div>
+                                            <!-- 下一步：这个链接将指向查看医生排班或直接挂号的页面 -->
+                                            <!-- 暂时使用 # 以避免 BuildError -->
+                                            <a href="#" class="btn btn-primary btn-sm">
+                                                选择此医生 <i class="fas fa-chevron-right ms-1"></i>
+                                            </a>
+                                            <!--
+                                            未来的链接可能像这样:
+                                            <a href="{{ url_for('registration.available_schedules', doctor_id=doctor.id) }}" class="btn btn-primary btn-sm">
+                                                选择此医生 <i class="fas fa-chevron-right ms-1"></i>
+                                            </a>
+                                            -->
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning text-center" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                当前科室 "{{ department_name }}" 暂无医生排班信息，或该科室下暂无医生。
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer text-center bg-light">
+                        <a href="{{ url_for('registration.list_departments') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> 返回科室列表
+                        </a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-primary ms-2">
+                            <i class="fas fa-home me-1"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 引入 Bootstrap JS (通常放在 body 结束前) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- (可选) 如果您有自定义的JS文件 -->
+    <!-- <script src="{{ url_for('static', filename='js/your_custom_script.js') }}"></script> -->
+</body>
+</html>

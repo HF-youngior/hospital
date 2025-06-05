@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>挂号成功 - {{ doctor.name if doctor else '预约' }} - 医院挂号系统</title>
+
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Font Awesome CSS from CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            background-color: #f8f9fa; /* A light grey background */
+            padding-top: 20px;
+            padding-bottom: 40px;
+        }
+        .card-header.bg-success-custom {
+            background-color: #198754; /* Bootstrap's default success green */
+            color: white;
+        }
+        .table th {
+            background-color: #e9ecef; /* A slightly darker grey for table headers */
+            font-weight: 600;
+        }
+        .icon-text {
+            margin-right: 8px;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            font-size: 0.9em;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-9 col-lg-8">
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show mt-3" role="alert">
+                                <i class="fas fa-info-circle icon-text"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                <!-- End Flash Messages -->
+
+                <div class="card shadow-lg mt-4">
+                    <div class="card-header bg-success-custom text-center">
+                        <h3 class="mb-0 py-2"><i class="fas fa-check-circle icon-text"></i>挂号成功！</h3>
+                    </div>
+                    <div class="card-body p-4 p-md-5">
+                        <p class="lead text-center mb-4">您已成功预约，请仔细核对以下信息，并按时就诊。</p>
+
+                        <h5 class="mb-3"><i class="fas fa-calendar-alt icon-text text-primary"></i>预约详情</h5>
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-hover">
+                                <tbody>
+                                    <tr>
+                                        <th style="width: 30%;">挂号ID</th>
+                                        <td>{{ registration.registration_id }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>就诊人</th>
+                                        <td>
+                                            {{ patient.name if patient else '未知患者' }}
+                                            {% if patient and patient.gender %} ({{ patient.gender }}) {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>联系方式</th>
+                                        <td>{{ patient.contact if patient and patient.contact else '未提供' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>身份证号</th>
+                                        <td>{{ patient.id_card if patient and patient.id_card else '未提供' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>预约医生</th>
+                                        <td>
+                                            {{ doctor.name if doctor else '未知医生' }}
+                                            {% if doctor and doctor.title %} ({{ doctor.title }}) {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>所属科室</th>
+                                        <td>{{ doctor.department if doctor else '未知科室' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>就诊日期</th>
+                                        <td>
+                                            {{ schedule.date.strftime('%Y-%m-%d') if schedule and schedule.date else 'N/A' }}
+                                            {% if weekday_str %} ({{ weekday_str }}) {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>就诊时段</th>
+                                        <td>{{ schedule.time_slot if schedule else 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>诊室地址</th>
+                                        <td>{{ schedule.room_address if schedule and schedule.room_address else '请关注医院现场指引或咨询台' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>挂号费用</th>
+                                        <td>
+                                            ¥ {{ "%.2f"|format(schedule.reg_fee) if schedule and schedule.reg_fee is not none else 'N/A' }}
+                                            <span class="text-muted small ms-1">(费用仅供参考，以现场支付为准)</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>挂号时间</th>
+                                        <td>
+                                            {{ registration.reg_time.strftime('%Y-%m-%d %H:%M:%S') if registration and registration.reg_time else 'N/A' }}
+                                            <span class="text-muted small ms-1">(UTC 时间)</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <th>当前状态</th>
+                                        <td>
+                                            {% set status_class = 'secondary' %}
+                                            {% if registration.visit_status == '已预约' %} {% set status_class = 'primary' %}
+                                            {% elif registration.visit_status == '已取消' %} {% set status_class = 'danger' %}
+                                            {% elif registration.visit_status in ['已完成', '已就诊'] %} {% set status_class = 'success' %}
+                                            {% elif registration.visit_status == '待支付' %} {% set status_class = 'warning' %}
+                                            {% endif %}
+                                            <span class="badge bg-{{ status_class }}">{{ registration.visit_status if registration else 'N/A' }}</span>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <hr class="my-4">
+
+                        <h5 class="mb-3"><i class="fas fa-info-circle icon-text text-info"></i>温馨提示</h5>
+                        <ul class="list-unstyled">
+                            <li class="mb-2"><i class="fas fa-hospital-user icon-text text-muted"></i>请于就诊当日提前至少30分钟到指定地点（通常为医院门诊大厅或科室分诊台）凭有效证件取号/报到。</li>
+                            <li class="mb-2"><i class="fas fa-calendar-times icon-text text-muted"></i>如需取消预约，请务必在就诊前一天（或医院规定的截止时间前）通过本系统或联系医院操作，避免浪费医疗资源和影响个人信用。</li>
+                            <li class="mb-2"><i class="fas fa-id-card icon-text text-muted"></i>就诊时请携带患者本人的有效身份证件（如身份证、社保卡/医保卡等）。</li>
+                            <li class="mb-2"><i class="fas fa-notes-medical icon-text text-muted"></i>具体就诊流程、所需材料及注意事项请以医院官方通知或现场指引为准。</li>
+                        </ul>
+                    </div>
+                    <div class="card-footer text-center bg-light py-3">
+                        <a href="{{ url_for('registration.registration_list') }}" class="btn btn-primary btn-lg me-md-2 mb-2 mb-md-0">
+                            <i class="fas fa-list-alt icon-text"></i> 查看我的挂号记录
+                        </a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-home icon-text"></i> 返回首页
+                        </a>
+                        <!--
+                        <button onclick="window.print()" class="btn btn-outline-info btn-lg ms-md-2 mt-2 mt-md-0">
+                            <i class="fas fa-print icon-text"></i> 打印凭证
+                        </button>
+                        -->
+                    </div>
+                </div>
+
+                <footer class="footer text-center">
+                    <p>
+                        当前系统时间: {{ py_date.today().strftime('%Y-%m-%d') if py_date else '日期信息不可用' }}
+                        <!-- For current time: you might need datetime module passed or JS -->
+                    </p>
+                    <p>&copy; {{ py_date.today().year if py_date else '2025' }} 医院在线挂号系统. 版权所有.</p>
+                </footer>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS Bundle with Popper from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>

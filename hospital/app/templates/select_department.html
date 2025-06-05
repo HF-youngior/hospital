@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>选择科室 - 医院挂号系统</title>
+
+    <!-- Bootstrap CSS from CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+
+    <!-- Font Awesome CSS from CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <style>
+        body {
+            background-color: #f0f2f5; /* A slightly different light background */
+            padding-top: 20px;
+            padding-bottom: 40px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        .main-content {
+            flex-grow: 1;
+        }
+        .card-header.bg-custom-primary {
+            background-color: #0d6efd; /* Bootstrap's default primary blue */
+            color: white;
+        }
+        .list-group-item-action:hover, .list-group-item-action:focus {
+            background-color: #e9ecef;
+            color: #0056b3;
+        }
+        .icon-text {
+            margin-right: 8px;
+        }
+        .footer {
+            margin-top: auto; /* Pushes footer to the bottom */
+            padding-top: 20px;
+            padding-bottom: 20px;
+            background-color: #ffffff; /* White background for footer */
+            border-top: 1px solid #dee2e6;
+            font-size: 0.9em;
+            color: #6c757d;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container main-content">
+        <div class="row justify-content-center mt-4 mb-4">
+            <div class="col-md-8 col-lg-7">
+
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <div class="mb-3">
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category if category else 'info' }} alert-dismissible fade show" role="alert">
+                                <i class="fas fa-info-circle icon-text"></i>{{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
+                <!-- End Flash Messages -->
+
+                <div class="card shadow-lg">
+                    <div class="card-header bg-custom-primary text-center">
+                        <h3 class="mb-0 py-2"><i class="fas fa-hospital icon-text"></i>选择科室进行挂号</h3>
+                    </div>
+                    <div class="card-body p-4">
+                        {% if departments and departments|length > 0 %}
+                            <p class="text-muted text-center mb-3">请点击下方列表选择您需要挂号的科室：</p>
+                            <div class="list-group">
+                                {% for department_name in departments %}
+                                    <a href="{{ url_for('registration.department_schedule_calendar', department_name=department_name) }}"
+                                       class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                                        <span class="fw-medium">{{ department_name }}</span>
+                                        <i class="fas fa-chevron-right text-secondary"></i>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="alert alert-warning text-center" role="alert">
+                                <i class="fas fa-exclamation-triangle icon-text"></i>目前系统中没有查询到可挂号的科室信息。
+                                <br>请稍后再试或联系管理员。
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="card-footer text-center bg-light py-3">
+                        <a href="{{ url_for('main.index') if 'main.index' in endpoint_functions else '/' }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left icon-text"></i> 返回首页
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p class="mb-0">
+                当前日期: <span id="current-date"></span>
+                <script>
+                    document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-CN');
+                </script>
+            </p>
+            <p class="mb-0">&copy; <span id="current-year"></span> 医院在线挂号系统. 版权所有.</p>
+            <script>
+                document.getElementById('current-year').textContent = new Date().getFullYear();
+            </script>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS Bundle with Popper from CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
+</body>
+</html>

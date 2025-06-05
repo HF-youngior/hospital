@@ -31,3 +31,8 @@ hospital/
 1. 安装依赖：`pip install -r requirements.txt`
 2. 配置数据库连接（修改 config.py）
 3. 启动项目：`python run.py` 
+
+
+- `index.html` :主页面地址
+- 初始化数据库：`init_db.py`
+- 查看登陆密码：`init_db.py`

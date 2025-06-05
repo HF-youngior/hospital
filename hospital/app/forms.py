@@ -39,7 +39,7 @@ class DoctorUserForm(FlaskForm):
     name = StringField('姓名', validators=[DataRequired(), Length(1, 50)])
     gender = StringField('性别', validators=[DataRequired(), Length(1, 10)])
     title = StringField('职称', validators=[DataRequired(), Length(1, 50)])
-    department = StringField('所属科室', validators=[DataRequired(), Length(1, 50)])
+    department: StringField = StringField('所属科室', validators=[DataRequired(), Length(1, 50)])
     phone = StringField('联系电话', validators=[DataRequired(), Length(1, 20)])
     status = StringField('状态', validators=[DataRequired(), Length(1, 20)])
     submit = SubmitField('提交')
