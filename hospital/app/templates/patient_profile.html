@@ -8,7 +8,7 @@
 <body>
 <div class="container mt-5">
     <h2>个人中心</h2>
-    
+
     <div class="card mb-4">
         <div class="card-header">
             <h5>账号信息</h5>
@@ -28,7 +28,7 @@
             </div>
         </div>
     </div>
-    
+
     {% if user.patient %}
     <div class="card mb-4">
         <div class="card-header bg-success text-white">
@@ -45,7 +45,7 @@
             </div>
             <div class="row mb-3">
                 <div class="col-md-3 fw-bold">出生日期：</div>
-                <div class="col-md-9">{{ user.patient.birth_date }}</div>
+                <div class="col-md-9">{{ user.patient.birth_date.strftime('%Y-%m-%d') }}</div>
             </div>
             <div class="row mb-3">
                 <div class="col-md-3 fw-bold">联系方式：</div>
@@ -72,7 +72,7 @@
         </div>
     </div>
     {% endif %}
-    
+
     <div class="card mb-4">
         <div class="card-header">
             <h5>就诊历史</h5>
@@ -94,12 +94,12 @@
                         {% for reg in registrations %}
                         <tr>
                             <td>{{ reg.registration_id }}</td>
-                            <td>{{ reg.reg_time }}</td>
-                            <td>{{ reg.schedule.department }}</td>
+                            <td>{{ reg.reg_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>{{ reg.schedule.doctor.department }}</td>
                             <td>{{ reg.schedule.doctor.name }}</td>
                             <td>{{ reg.visit_status }}</td>
                             <td>
-                                <a href="#" class="btn btn-sm btn-info">查看详情</a>
+                                <a href="{{ url_for('patient.view_record', registration_id=reg.registration_id) }}" class="btn btn-sm btn-info">查看详情</a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -110,8 +110,8 @@
             {% endif %}
         </div>
     </div>
-    
+
     <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回首页</a>
 </div>
 </body>
-</html> 
+</html>
