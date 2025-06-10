@@ -4,12 +4,13 @@ from app.views.decorators import role_required
 from app.models import Doctor, db, User
 from app.forms import DoctorForm, DoctorUserForm
 from werkzeug.security import generate_password_hash
-
+# doctor.py 是系统中医生信息管理的后台控制中心，仅供管理员使用，负责医生的增删改查以及为医生创建登录账号。
+# url_prefix='/doctor': 此蓝图中定义的所有路由都会自动加上 '/doctor' 前缀
 doctor_bp = Blueprint('doctor', __name__, url_prefix='/doctor')
 
-@doctor_bp.route('/list')
-@role_required('admin')
-@login_required
+@doctor_bp.route('/list') # URL: /doctor/list (默认支持 GET 请求)
+@role_required('admin') # 权限：只有 'admin' 角色的用户可以访问
+@login_required # 权限：用户必须已登录
 def doctor_list():
     doctors = Doctor.query.all()
     return render_template('doctor_list.html', doctors=doctors)

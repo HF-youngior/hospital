@@ -1,0 +1,48 @@
+{# templates/_macros.html #}
+
+{% macro render_messages(messages, default_category='info') %}
+    {% if messages %}
+        {# 你可以根据你的页面布局调整这里的容器 div，或者完全移除它如果你的 base.html 已经处理了容器 #}
+        {# <div class="container mt-3"> #} 
+            {% for category, message in messages %}
+                {% set category = category if category else default_category %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {# 添加一个通用图标，或者根据 category 选择不同图标 #}
+                    {% if category == 'success' %}
+                        <i class="fas fa-check-circle me-2"></i>
+                    {% elif category == 'danger' %}
+                        <i class="fas fa-times-circle me-2"></i>
+                    {% elif category == 'warning' %}
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                    {% else %}
+                        <i class="fas fa-info-circle me-2"></i>
+                    {% endif %}
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {# </div> #}
+    {% endif %}
+{% endmacro %}
+
+{# 你可以在这个文件中定义其他常用的宏 #}
+{# 例如，渲染表单字段的宏：
+{% macro render_field(field, label_visible=true) %}
+    <div class="form-group mb-3">
+        {% if label_visible and field.label %}
+            {{ field.label(class="form-label") }}
+        {% endif %}
+        {{ field(class="form-control" + (" is-invalid" if field.errors else ""))|safe }}
+        {% if field.errors %}
+            <div class="invalid-feedback">
+                {% for error in field.errors %}
+                    {{ error }}<br>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% if field.description %}
+            <small class="form-text text-muted">{{ field.description }}</small>
+        {% endif %}
+    </div>
+{% endmacro %}
+#}

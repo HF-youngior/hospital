@@ -1,7 +1,9 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
+
 from app.models import Patient, Registration, MedicalRecord, MedicationDetail, CheckDetail, Payment, db
+
 from app.forms import PatientForm
 from sqlalchemy import desc
 patient_bp = Blueprint('patient', __name__, url_prefix='/patient')
@@ -33,6 +35,11 @@ def add_patient():
         )
         db.session.add(patient)
         db.session.commit()
+        # 新增：同步User表
+        user = User.query.filter_by(id_card=patient.id_card).first()
+        if user:
+            user.patient_id = patient.patient_id
+            db.session.commit()
         flash('患者添加成功！')
         return redirect(url_for('patient.patient_list'))
     return render_template('patient_form.html', form=form, action='add')
@@ -52,6 +59,11 @@ def edit_patient(patient_id):
         patient.insurance_card = form.insurance_card.data
         patient.insurance_balance = form.insurance_balance.data
         db.session.commit()
+        # 新增：同步User表
+        user = User.query.filter_by(id_card=patient.id_card).first()
+        if user:
+            user.patient_id = patient.patient_id
+            db.session.commit()
         flash('患者信息已更新！')
         return redirect(url_for('patient.patient_list'))
     return render_template('patient_form.html', form=form, action='edit')

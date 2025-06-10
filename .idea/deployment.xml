@@ -2,6 +2,7 @@
 <project version="4">
   <component name="PublishConfigData" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
+
       <paths name="root@connect.gda1.seetacloud.com:13286 password">
         <serverdata>
           <mappings>
@@ -66,6 +67,7 @@
         </serverdata>
       </paths>
       <paths name="root@sconnect.nmb1.seetacloud.com:48051 password">
+
         <serverdata>
           <mappings>
             <mapping local="$PROJECT_DIR$" web="/" />

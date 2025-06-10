@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>确认挂号信息 - {{ schedule.doctor.name }}</title>
+
+    <!-- 引入 Bootstrap CSS (假设您在使用 Bootstrap 5) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- 引入 Font Awesome (如果您使用了图标) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <!-- 您可以添加自定义的 CSS 文件链接 -->
+    <!-- <link rel="stylesheet" href="{{ url_for('static', filename='css/custom_style.css') }}"> -->
+
+    <style>
+        body {
+            background-color: #f8f9fa; /* 淡灰色背景 */
+        }
+        .card-header {
+            background-color: #007bff; /* 蓝色头部 */
+            color: white;
+        }
+        .table th {
+            background-color: #e9ecef; /* 表格头部浅灰 */
+        }
+        .btn-primary {
+            background-color: #007bff;
+            border-color: #007bff;
+        }
+        .btn-primary:hover {
+            background-color: #0056b3;
+            border-color: #0056b3;
+        }
+        .btn-outline-secondary {
+            color: #6c757d;
+            border-color: #6c757d;
+        }
+        .btn-outline-secondary:hover {
+            color: #fff;
+            background-color: #6c757d;
+            border-color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+        <div class="container">
+            <a class="navbar-brand" href="{{ url_for('main.index') }}">挂号系统</a> {# 假设 main.index 是首页 #}
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    {% if current_user.is_authenticated %}
+                        <li class="nav-item">
+                            <span class="navbar-text me-3">
+                                您好, {{ current_user.username }} {# 或者 current_user.name #}
+                            </span>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.logout') }}">退出登录</a> {# 假设 auth.logout 是退出路由 #}
+                        </li>
+                    {% else %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{{ url_for('auth.login') }}">登录</a> {# 假设 auth.login 是登录路由 #}
+                        </li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4 mb-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card shadow-sm">
+                    <div class="card-header text-center">
+                        <h4 class="mb-0">确认挂号信息</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        {# Flash 消息显示区域 #}
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                <div class="alert alert-{{ category or 'info' }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+
+                        <h5>您选择的排班：</h5>
+                        <table class="table table-sm table-bordered table-striped">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%;">医生姓名</th>
+                                    <td>{{ schedule.doctor.name }} ({{ schedule.doctor.title }})</td>
+                                </tr>
+                                <tr>
+                                    <th>科室</th>
+                                    <td>{{ schedule.doctor.department }}</td>
+                                </tr>
+                                <tr>
+                                    <th>就诊日期</th>
+                                    <td>{{ schedule.date.strftime('%Y-%m-%d') }} ({{ weekday_str }})</td>
+                                </tr>
+                                <tr>
+                                    <th>就诊时段</th>
+                                    <td>{{ schedule.time_slot }}</td>
+                                </tr>
+                                <tr>
+                                    <th>诊室地址</th>
+                                    <td>{{ schedule.room_address }}</td>
+                                </tr>
+                                <tr>
+                                    <th>挂号费</th>
+                                    <td>¥ {{ "%.2f"|format(schedule.reg_fee) }}</td>
+                                </tr>
+                                <tr>
+                                    <th>当前剩余号源</th>
+                                    <td>{{ schedule.remain_slots }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <hr class="my-4">
+
+                        <h5>就诊人信息：</h5>
+                        {% if patient %}
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                <tr>
+                                    <th style="width: 30%;">姓名</th>
+                                    <td>{{ patient.name }}</td>
+                                </tr>
+                                {# <tr>
+                                    <th>联系电话</th>
+                                    <td>{{ patient.phone_number }}</td>
+                                </tr> #}
+                            </tbody>
+                        </table>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            无法获取患者信息。请确保您的账户已绑定患者信息。
+                            <a href="{{ url_for('user.profile') if false else '#' }}">前往个人中心完善</a> {# 替换为实际的个人中心链接 #}
+                        </div>
+                        {% endif %}
+
+                        <hr class="my-4">
+
+                        <form method="POST" action="{{ url_for('registration.create_appointment_page', schedule_id=schedule.schedule_id) }}">
+                            {# 如果您使用了 Flask-WTF/CSRFProtect，请确保您的表单中有 CSRF token #}
+                            {# 例如，如果您在视图函数中创建了一个 WTForm 对象 form #}
+                            {# {{ form.hidden_tag() }} #}
+                            {# 或者，如果您全局配置了 CSRFProtect，它可能会自动处理或您需要手动添加 #}
+                            {# 如果您不确定，并且没有使用 Flask-WTF 表单类，可以先省略 CSRF token，但生产环境务必加上 #}
+                            {# 对于非WTForm表单，如果使用了Flask-SeaSurf或类似的CSRF库，可能是 {{ csrf_token() }} #}
+                            {# 如果您在 registration_bp.py 中使用了 Flask-WTF 的 CSRFProtect，那么应该有 csrf_token()可用 #}
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}">
+
+
+                            {% if patient and schedule.remain_slots > 0 %}
+                                <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                    <i class="fas fa-check-circle me-2"></i>确认挂号
+                                </button>
+                            {% else %}
+                                <button type="button" class="btn btn-secondary w-100 btn-lg" disabled>
+                                    无法挂号 (请检查患者信息或号源)
+                                </button>
+                            {% endif %}
+                        </form>
+
+                    </div>
+                    <div class="card-footer text-center bg-light">
+                        <a href="{{ url_for('registration.department_schedule_calendar', department_name=schedule.doctor.department) }}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i> 返回日历选择其他
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer mt-auto py-3 bg-light text-center">
+        <div class="container">
+            <span class="text-muted">© {{ py_date.today().year }} 挂号系统. 版权所有.</span> {# 需要在视图中传递 py_date #}
+        </div>
+    </footer>
+
+    <!-- 引入 Bootstrap JS (通常放在 body 底部) -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- 您可以添加自定义的 JS 文件链接 -->
+    <!-- <script src="{{ url_for('static', filename='js/custom_script.js') }}"></script> -->
+</body>
+</html>
