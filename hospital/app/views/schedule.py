@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
+from sqlalchemy.exc import SQLAlchemyError
+
 from app.views.decorators import role_required
 from app.models import Schedule, Doctor, db
 from app.forms import ScheduleForm
@@ -29,34 +31,35 @@ def schedule_list():
 @login_required
 @role_required('admin')
 def add_schedule():
-    """添加排班"""
     form = ScheduleForm()
-    
-    # 获取所有医生列表作为下拉选项
+
     doctors = Doctor.query.filter_by(status='在职').all()
     form.doctor_id.choices = [(d.doctor_id, f"{d.name} ({d.department})") for d in doctors]
-    
+
     if form.validate_on_submit():
-        # 自动填充科室信息
         doctor = Doctor.query.get(form.doctor_id.data)
-        
+
         schedule = Schedule(
             doctor_id=form.doctor_id.data,
             date=form.date.data,
             time_slot=form.time_slot.data,
-            # department=doctor.department,  # 从医生信息获取科室
             room_address=form.room_address.data,
             reg_fee=form.reg_fee.data,
             total_slots=form.total_slots.data,
-            remain_slots=form.total_slots.data  # 初始时剩余号源等于总号源
+            remain_slots=form.total_slots.data
         )
         db.session.add(schedule)
-        db.session.commit()
-        flash('排班添加成功！')
-        return redirect(url_for('schedule.schedule_list'))
-    
-    return render_template('schedule_form.html', form=form, action='add')
+        try:
+            db.session.commit()
+            flash('排班添加成功！')
+            return redirect(url_for('schedule.schedule_list'))
+        except SQLAlchemyError as e:
+            db.session.rollback()
+            flash('该医生该时间段已存在排班，不能重复添加！', 'error')
+            return render_template('schedule_form.html', form=form, action='add')
 
+    # GET请求或者表单验证失败，显示添加表单
+    return render_template('schedule_form.html', form=form, action='add')
 @schedule_bp.route('/edit/<int:schedule_id>', methods=['GET', 'POST'])
 @login_required
 @role_required('admin')

@@ -3,6 +3,7 @@ from app.models import User, Patient, Doctor, Schedule, Registration, Payment, M
     CheckDetail, Drug, CheckItem
 from werkzeug.security import generate_password_hash
 from datetime import datetime, date
+from sqlalchemy import text
 
 app = create_app()
 
@@ -309,3 +310,44 @@ with app.app_context():
     print("患者账号：")
     for i, user in enumerate(patient_users, 1):
         print(f"  用户名: {user.username}, 密码: patient{i}123")
+    # SQLAlchemy 的 execute 不支持 GO 语句，需要分割执行
+    # 先删除触发器语句
+    drop_trigger_sql = """
+    IF OBJECT_ID ('trg_check_schedule_duplicate', 'TR') IS NOT NULL
+        DROP TRIGGER trg_check_schedule_duplicate;
+    """
+    with db.engine.connect() as conn:
+        conn.execute(text(drop_trigger_sql))
+        conn.commit()
+
+    # 创建触发器语句
+    create_trigger_sql = """
+    CREATE TRIGGER trg_check_schedule_duplicate
+    ON Schedule
+    INSTEAD OF INSERT
+    AS
+    BEGIN
+        IF EXISTS (
+            SELECT 1
+            FROM Schedule s
+            INNER JOIN inserted i
+                ON s.doctor_id = i.doctor_id
+                AND s.date = i.date
+                AND s.time_slot = i.time_slot
+        )
+        BEGIN
+            RAISERROR('该医生该时间段已存在排班，不能重复添加', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+
+        INSERT INTO Schedule (doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots)
+        SELECT doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots
+        FROM inserted;
+    END;
+    """
+    with db.engine.connect() as conn:
+        conn.execute(text(create_trigger_sql))
+        conn.commit()
+
+    print("触发器已成功创建！")
