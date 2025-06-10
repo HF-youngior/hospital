@@ -1,9 +1,11 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
-from app.models import Patient, db, User
-from app.forms import PatientForm
 
+from app.models import Patient, Registration, MedicalRecord, MedicationDetail, CheckDetail, Payment, db
+
+from app.forms import PatientForm
+from sqlalchemy import desc
 patient_bp = Blueprint('patient', __name__, url_prefix='/patient')
 
 @patient_bp.route('/list')
@@ -82,10 +84,48 @@ def patient_profile():
     """患者个人中心页面"""
     registrations = []
     # 如果用户已关联患者信息，查询挂号记录
-    if current_user.patient_id:
+    if not current_user.patient_id:
+            flash('患者已删除！')
+            return redirect(url_for('patient.patient_list'))
         # 这里可以查询患者的挂号记录，暂时为空列表
         # 实际开发时，需要增加Registration模型的查询
         # registrations = Registration.query.filter_by(patient_id=current_user.patient_id).all()
-        pass
-        
-    return render_template('patient_profile.html', user=current_user, registrations=registrations) 
+    registrations = Registration.query.filter_by(
+        patient_id=current_user.patient_id
+    ).order_by(desc(Registration.reg_time)).all()
+
+    return render_template('patient_profile.html', user=current_user, registrations=registrations)
+
+
+@patient_bp.route('/record/<int:registration_id>')
+@login_required
+@role_required('patient')
+def view_record(registration_id):
+    """查看单次就诊详情"""
+    registration = Registration.query.get_or_404(registration_id)
+    if registration.patient_id != current_user.patient_id:
+        flash('您无权查看此记录')
+        return redirect(url_for('patient.patient_profile'))
+
+    # 查询诊疗记录
+    medical_record = MedicalRecord.query.filter_by(registration_id=registration_id).first()
+
+    # 查询用药和检查详情
+    medications = MedicationDetail.query.filter_by(registration_id=registration_id).all()
+    checks = CheckDetail.query.filter_by(registration_id=registration_id).all()
+
+    # 查询支付记录
+    payments = Payment.query.filter_by(registration_id=registration_id).all()
+
+    # 为用药和检查添加支付状态
+    for med in medications:
+        med.is_paid = any(p.fee_type == '药品费' and p.pay_status == '已支付' for p in payments)
+    for check in checks:
+        check.is_paid = any(p.fee_type == '检查费' and p.pay_status == '已支付' for p in payments)
+
+    return render_template('record_detail.html',
+                           registration=registration,
+                           medical_record=medical_record,
+                           medications=medications,
+                           checks=checks,
+                           payments=payments)

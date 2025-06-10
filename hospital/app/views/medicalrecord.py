@@ -28,27 +28,48 @@ def list():
 
     return render_template('medicalrecord.html', registrations=registrations)
 
+
 @medicalrecord.route('/medicalrecord/consult/<int:registration_id>', methods=['GET'])
 @role_required('doctor')
 @login_required
 def consult(registration_id):
     registration = Registration.query.get_or_404(registration_id)
+    # 验证医生是否有权限为该挂号看病
+    if current_user.role == 'doctor' and registration.schedule.doctor_id != current_user.doctor.doctor_id:
+        flash('您无权为该患者看病')
+        return redirect(url_for('medicalrecord.medicalrecord_list'))
     patient_id = registration.patient_id
     drugs = Drug.query.all()
     check_items = CheckItem.query.all()
-    return render_template('medicalrecord.html', record=None, patient_id=patient_id, registration_id=registration_id,
+    record = MedicalRecord.query.filter_by(registration_id=registration_id).first()
+    return render_template('medicalrecord.html', record=record, patient_id=patient_id, registration_id=registration_id,
                            drugs=drugs, check_items=check_items)
 
 
 @medicalrecord.route('/medicalrecord/save', methods=['POST'])
+@role_required('doctor')
+@login_required
 def save():
+    registration_id = request.form.get('registration_id')
+    if not registration_id:
+        flash('挂号ID不能为空')
+        return redirect(url_for('medicalrecord.medicalrecord_list'))
+
+    # 验证挂号记录
+    registration = Registration.query.get_or_404(int(registration_id))
+    if current_user.role == 'doctor' and registration.schedule.doctor_id != current_user.doctor.doctor_id:
+        flash('您无权为该患者保存诊疗记录')
+        return redirect(url_for('medicalrecord.medicalrecord_list'))
+
+    # 获取或创建诊疗记录
     record_id = request.form.get('record_id')
     if record_id:
-        record = MedicalRecord.query.get(record_id)
+        record = MedicalRecord.query.get_or_404(record_id)
     else:
         record = MedicalRecord()
 
-    record.patient_id = request.form.get('patient_id')
+    # 更新诊疗记录
+    record.registration_id = int(registration_id)
     record.chief_complaint = request.form.get('chief_complaint')
     record.present_illness = request.form.get('present_illness')
     record.past_history = request.form.get('past_history')
@@ -56,11 +77,7 @@ def save():
     record.physical_exam = request.form.get('physical_exam')
     record.diagnosis = request.form.get('diagnosis')
     record.suggestion = request.form.get('suggestion')
-    registration_id = request.form.get('registration_id')
-    if registration_id:
-        record.registration_id = int(registration_id)
-    else:
-        return "挂号ID不能为空", 400
+    record.visit_time = datetime.now()  # 添加就诊时间
 
     # 处理用药明细
     medication_details = []
@@ -69,9 +86,8 @@ def save():
         drug_id = request.form.get(f'medication_drug_id_{i}')
         if drug_id:
             detail = MedicationDetail(
-                record_id=record.id if record_id else None,
-                drug_id=int(drug_id),
-                plan_id=None
+                registration_id=int(registration_id),  # 修正为 registration_id
+                drug_id=int(drug_id)
             )
             medication_details.append(detail)
         i += 1
@@ -83,29 +99,28 @@ def save():
         item_id = request.form.get(f'check_item_id_{i}')
         if item_id:
             detail = CheckDetail(
-                record_id=record.id if record_id else None,
-                item_id=int(item_id),
-                status='未检查'
+                registration_id=int(registration_id),  # 修正为 registration_id
+                item_id=int(item_id)
             )
             check_details.append(detail)
         i += 1
 
     try:
         db.session.add(record)
-        db.session.flush()  # 获取 record.id
+        # 删除旧的用药和检查记录
+        MedicationDetail.query.filter_by(registration_id=registration_id).delete()
+        CheckDetail.query.filter_by(registration_id=registration_id).delete()
+        # 添加新的用药和检查记录
         for detail in medication_details:
-            detail.record_id = record.id
             db.session.add(detail)
         for detail in check_details:
-            detail.record_id = record.id
             db.session.add(detail)
         # 更新挂号状态为“已就诊”
-        registration = Registration.query.get(record.registration_id)
-        if registration:
-            registration.visit_status = '已就诊'
+        registration.visit_status = '已就诊'
         db.session.commit()
         flash('诊疗记录保存成功！')
         return redirect(url_for('medicalrecord.medicalrecord_list'))
     except Exception as e:
         db.session.rollback()
-        return f"保存失败: {str(e)}", 500
+        flash(f'保存失败: {str(e)}')
+        return redirect(url_for('medicalrecord.consult', registration_id=registration_id))

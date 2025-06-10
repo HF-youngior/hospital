@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>就诊详情 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>就诊详情</h2>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>挂号信息</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">挂号ID：</div>
+                <div class="col-md-9">{{ registration.registration_id }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">挂号时间：</div>
+                <div class="col-md-9">{{ registration.reg_time.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">医生：</div>
+                <div class="col-md-9">{{ registration.schedule.doctor.name }}（{{ registration.schedule.doctor.title }}）</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">科室：</div>
+                <div class="col-md-9">{{ registration.schedule.doctor.department }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">状态：</div>
+                <div class="col-md-9">{{ registration.visit_status }}</div>
+            </div>
+        </div>
+    </div>
+
+    {% if medical_record %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5>诊疗记录</h5>
+        </div>
+        <div class="card-body">
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">就诊时间：</div>
+                <div class="col-md-9">{{ medical_record.visit_time.strftime('%Y-%m-%d %H:%M') }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">主诉：</div>
+                <div class="col-md-9">{{ medical_record.chief_complaint or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">现病史：</div>
+                <div class="col-md-9">{{ medical_record.present_illness or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">既往史：</div>
+                <div class="col-md-9">{{ medical_record.past_history or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">过敏史：</div>
+                <div class="col-md-9">{{ medical_record.allergy_history or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">体检：</div>
+                <div class="col-md-9">{{ medical_record.physical_exam or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">诊断：</div>
+                <div class="col-md-9">{{ medical_record.diagnosis or '无' }}</div>
+            </div>
+            <div class="row mb-3">
+                <div class="col-md-3 fw-bold">建议：</div>
+                <div class="col-md-9">{{ medical_record.suggestion or '无' }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>用药详情</h5>
+        </div>
+        <div class="card-body">
+            {% if medications %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>药品名称</th>
+                        <th>规格</th>
+                        <th>价格</th>
+                        <th>支付状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for med in medications %}
+                    <tr>
+                        <td>{{ med.drug.name }}</td>
+                        <td>{{ med.drug.specification }}</td>
+                        <td>{{ med.drug.price }} 元</td>
+                        <td>{{ '已支付' if med.is_paid else '未支付' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>无用药记录。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>检查详情</h5>
+        </div>
+        <div class="card-body">
+            {% if checks %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>检查项目</th>
+                        <th>价格</th>
+                        <th>结果</th>
+                        <th>支付状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for check in checks %}
+                    <tr>
+                        <td>{{ check.check_item.name }}</td>
+                        <td>{{ check.check_item.price }} 元</td>
+                        <td>{{ check.result or '未完成' }}</td>
+                        <td>{{ '已支付' if check.is_paid else '未支付' }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>无检查记录。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5>支付记录</h5>
+        </div>
+        <div class="card-body">
+            {% if payments %}
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>费用类型</th>
+                        <th>医保金额</th>
+                        <th>自付金额</th>
+                        <th>支付方式</th>
+                        <th>支付时间</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for payment in payments %}
+                    <tr>
+                        <td>{{ payment.fee_type }}</td>
+                        <td>{{ payment.insurance_amount }} 元</td>
+                        <td>{{ payment.self_pay_amount }} 元</td>
+                        <td>{{ payment.pay_method }}</td>
+                        <td>{{ payment.pay_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                        <td>{{ payment.pay_status }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <p>无支付记录。</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary">返回个人中心</a>
+</div>
+</body>
+</html>
