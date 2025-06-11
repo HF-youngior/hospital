@@ -92,7 +92,6 @@
 
             {% if schedule_matrix[current_date_iso] and schedule_matrix[current_date_iso][current_slot_name] %}
                 {% for schedule_entry in schedule_matrix[current_date_iso][current_slot_name] %}
-                    {# -------------------- 修改这里的链接 -------------------- #}
                     <a href="{{ url_for('registration.create_appointment_page', schedule_id=schedule_entry.schedule_id) }}"
                        class="doctor-entry {% if schedule_entry.remain_slots <= 0 %}fully-booked disabled{% endif %}"
                        title="点击为 {{ schedule_entry.doctor.name }} 医生挂号">
@@ -102,7 +101,6 @@
                             余号: {{ schedule_entry.remain_slots }}
                         </span>
                     </a>
-                    {# -------------------- 链接修改结束 -------------------- #}
                 {% endfor %}
             {% else %}
                 <span class="text-muted fst-italic small"></span>
@@ -113,6 +111,11 @@
     {% endfor %}
 </tbody>
     </table>
-</div>
+    </div>
+
+    <div class="mt-3">
+        <a href="{{ url_for('registration.select_department_page') }}" class="btn btn-secondary">返回上一页</a>
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回首页</a>
+    </div>
 </body>
 </html>

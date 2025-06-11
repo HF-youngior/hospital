@@ -8,7 +8,7 @@
 <body>
 <div class="container mt-5">
     <h2>可预约排班列表</h2>
-    
+
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-info">
@@ -18,7 +18,7 @@
     </div>
     {% endif %}
     {% endwith %}
-    
+
     <table class="table table-bordered table-hover mt-4">
         <thead>
             <tr>
@@ -51,15 +51,15 @@
         {% endfor %}
         </tbody>
     </table>
-    
+
     {% if not schedules %}
     <div class="alert alert-info">暂无可预约排班</div>
     {% endif %}
-    
+
     <div class="mt-3">
         <a href="{{ url_for('registration.registration_list') }}" class="btn btn-info">我的挂号记录</a>
         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回首页</a>
     </div>
 </div>
 </body>
-</html> 
+</html>
