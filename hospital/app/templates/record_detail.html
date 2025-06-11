@@ -9,6 +9,7 @@
 <div class="container mt-5">
     <h2>就诊详情</h2>
 
+    <!-- 挂号信息 -->
     <div class="card mb-4">
         <div class="card-header">
             <h5>挂号信息</h5>
@@ -37,6 +38,7 @@
         </div>
     </div>
 
+    <!-- 诊疗记录 -->
     {% if medical_record %}
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -79,6 +81,7 @@
     </div>
     {% endif %}
 
+    <!-- 用药详情 -->
     <div class="card mb-4">
         <div class="card-header">
             <h5>用药详情</h5>
@@ -111,6 +114,7 @@
         </div>
     </div>
 
+    <!-- 检查详情 -->
     <div class="card mb-4">
         <div class="card-header">
             <h5>检查详情</h5>
@@ -143,6 +147,7 @@
         </div>
     </div>
 
+    <!-- 支付记录 -->
     <div class="card mb-4">
         <div class="card-header">
             <h5>支付记录</h5>
@@ -180,11 +185,6 @@
     </div>
 
     <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary">返回个人中心</a>
-
-    <a href="{{ url_for('invoice.generate', registration_id=registration.registration_id) }}"
-        class="btn btn-success">
-        生成电子发票
-    </a>
 </div>
 </body>
 </html>

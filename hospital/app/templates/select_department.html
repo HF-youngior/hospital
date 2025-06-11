@@ -91,9 +91,14 @@
                         {% endif %}
                     </div>
                     <div class="card-footer text-center bg-light py-3">
-                        <a href="{{ url_for('main.index') if 'main.index' in endpoint_functions else '/' }}" class="btn btn-outline-secondary">
-                            <i class="fas fa-arrow-left icon-text"></i> 返回首页
-                        </a>
+                        <div class="btn-group" role="group">
+                            <a href="{{ url_for('main.index') if 'main.index' in endpoint_functions else '/' }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left icon-text"></i> 返回首页
+                            </a>
+                            <a href="{{ url_for('registration.registration_list') }}" class="btn btn-outline-secondary">
+                                <i class="fas fa-list icon-text"></i> 预约记录
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -108,7 +113,7 @@
                     document.getElementById('current-date').textContent = new Date().toLocaleDateString('zh-CN');
                 </script>
             </p>
-            <p class="mb-0">&copy; <span id="current-year"></span> 医院在线挂号系统. 版权所有.</p>
+            <p class="mb-0">© <span id="current-year"></span> 医院在线挂号系统. 版权所有.</p>
             <script>
                 document.getElementById('current-year').textContent = new Date().getFullYear();
             </script>

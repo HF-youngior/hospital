@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
 
-from app.models import Patient, Registration, MedicalRecord, MedicationDetail, CheckDetail, Payment, db
+from app.models import Patient, Registration, MedicalRecord, MedicationDetail, CheckDetail, Payment, db,User
 
 from app.forms import PatientForm
 from sqlalchemy import desc
@@ -78,18 +78,15 @@ def delete_patient(patient_id):
     flash('患者已删除！')
     return redirect(url_for('patient.patient_list'))
 
+
 @patient_bp.route('/profile')
 @login_required
 def patient_profile():
     """患者个人中心页面"""
-    registrations = []
-    # 如果用户已关联患者信息，查询挂号记录
     if not current_user.patient_id:
-            flash('患者已删除！')
-            return redirect(url_for('patient.patient_list'))
-        # 这里可以查询患者的挂号记录，暂时为空列表
-        # 实际开发时，需要增加Registration模型的查询
-        # registrations = Registration.query.filter_by(patient_id=current_user.patient_id).all()
+        flash('您的账号未关联患者信息')
+        return redirect(url_for('main.index'))
+
     registrations = Registration.query.filter_by(
         patient_id=current_user.patient_id
     ).order_by(desc(Registration.reg_time)).all()
@@ -107,21 +104,10 @@ def view_record(registration_id):
         flash('您无权查看此记录')
         return redirect(url_for('patient.patient_profile'))
 
-    # 查询诊疗记录
     medical_record = MedicalRecord.query.filter_by(registration_id=registration_id).first()
-
-    # 查询用药和检查详情
     medications = MedicationDetail.query.filter_by(registration_id=registration_id).all()
     checks = CheckDetail.query.filter_by(registration_id=registration_id).all()
-
-    # 查询支付记录
     payments = Payment.query.filter_by(registration_id=registration_id).all()
-
-    # 为用药和检查添加支付状态
-    for med in medications:
-        med.is_paid = any(p.fee_type == '药品费' and p.pay_status == '已支付' for p in payments)
-    for check in checks:
-        check.is_paid = any(p.fee_type == '检查费' and p.pay_status == '已支付' for p in payments)
 
     return render_template('record_detail.html',
                            registration=registration,

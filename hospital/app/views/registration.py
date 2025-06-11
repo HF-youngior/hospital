@@ -370,7 +370,7 @@ def create_appointment_page(schedule_id):
                     patient_id=current_patient.patient_id,
                     schedule_id=refreshed_schedule_item.schedule_id,
                     reg_time=datetime.utcnow(),
-                    visit_status='已预约',
+                    visit_status='待就诊',
                 )
                 db.session.add(new_registration)
                 # refreshed_schedule_item 是受 SQLAlchemy 管理的对象，其属性修改会被追踪
