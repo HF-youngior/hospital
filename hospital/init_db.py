@@ -331,9 +331,14 @@ with app.app_context():
             SELECT 1
             FROM Schedule s
             INNER JOIN inserted i
-                ON s.doctor_id = i.doctor_id
-                AND s.date = i.date
-                AND s.time_slot = i.time_slot
+                ON 
+                (
+                    -- 同一个医生同一时间段重复
+                    (s.doctor_id = i.doctor_id AND s.date = i.date AND s.time_slot = i.time_slot)
+                    OR
+                    -- 不同医生同时间同诊室
+                    (s.date = i.date AND s.time_slot = i.time_slot AND s.room_address = i.room_address AND s.doctor_id <> i.doctor_id)
+                )
         )
         BEGIN
             RAISERROR('该医生该时间段已存在排班，不能重复添加', 16, 1);
@@ -350,4 +355,4 @@ with app.app_context():
         conn.execute(text(create_trigger_sql))
         conn.commit()
 
-    print("触发器已成功创建！")
+    print("排班冲突触发器已成功创建！")
