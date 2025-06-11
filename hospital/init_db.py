@@ -327,25 +327,37 @@ with app.app_context():
     INSTEAD OF INSERT
     AS
     BEGIN
+        -- 同一个医生同一天同一时间段，重复排班
         IF EXISTS (
             SELECT 1
             FROM Schedule s
             INNER JOIN inserted i
-                ON 
-                (
-                    -- 同一个医生同一时间段重复
-                    (s.doctor_id = i.doctor_id AND s.date = i.date AND s.time_slot = i.time_slot)
-                    OR
-                    -- 不同医生同时间同诊室
-                    (s.date = i.date AND s.time_slot = i.time_slot AND s.room_address = i.room_address AND s.doctor_id <> i.doctor_id)
-                )
+                ON s.doctor_id = i.doctor_id
+                AND s.date = i.date
+                AND s.time_slot = i.time_slot
         )
         BEGIN
-            RAISERROR('该医生该时间段已存在排班，不能重复添加', 16, 1);
+            RAISERROR('排班冲突：该医生在该日期和时间段已有排班记录，不能重复添加。', 16, 1);
             ROLLBACK TRANSACTION;
             RETURN;
         END
-
+    
+        -- 不同医生在同一天同一时间段同一诊室，冲突
+        IF EXISTS (
+            SELECT 1
+            FROM Schedule s
+            INNER JOIN inserted i
+                ON s.date = i.date
+                AND s.time_slot = i.time_slot
+                AND s.room_address = i.room_address
+                AND s.doctor_id <> i.doctor_id
+        )
+        BEGIN
+            RAISERROR('排班冲突：已有其他医生在相同日期、时间段和诊室排班，不能重复安排。', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+        -- 如果没有冲突，正常插入
         INSERT INTO Schedule (doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots)
         SELECT doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots
         FROM inserted;
