@@ -97,8 +97,9 @@
         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
     </div>
     {% endif %}
-
-    {% if patient_id %}
+    {# 这个 {% if patient_id %} 块是医生填写表单的部分，保持不变 #}
+{% if patient_id %}
+    {# 这里的代码是你之前提供的医生填写表单的代码，保持原样不动 #}
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
@@ -189,7 +190,135 @@
             </div>
         </div>
     </div>
-    {% endif %}
+{% endif %}
+
+{# 以下是用于显示已保存的病历记录的部分 #}
+{% if record %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">患者ID: {{ record.registration.patient_id }}</h5>
+        <table class="table table-bordered">
+            <tbody>
+                <tr>
+                    <th>挂号ID</th>
+                    <td>{{ record.registration_id }}</td>
+                </tr>
+                <tr>
+                    <th>主诉</th>
+                    <td>{{ record.chief_complaint }}</td>
+                </tr>
+                <tr>
+                    <th>现病史</th>
+                    <td>{{ record.present_illness }}</td>
+                </tr>
+                <tr>
+                    <th>既往史</th>
+                    <td>{{ record.past_history }}</td>
+                </tr>
+                <tr>
+                    <th>过敏史</th>
+                    <td>{{ record.allergy_history }}</td>
+                </tr>
+                <tr>
+                    <th>体格检查</th>
+                    <td>{{ record.physical_exam }}</td>
+                </tr>
+                <tr>
+                    <th>诊断结论</th>
+                    <td>{{ record.diagnosis }}</td>
+                </tr>
+                <tr>
+                    <th>建议</th>
+                    <td>{{ record.suggestion }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h5 class="mt-4">用药明细</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>药品名称</th>
+                    <th>价格</th>
+                    <th>医保报销比例</th>
+                    <th>通用用法</th>
+                    <th>通用频次</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {# 检查 record 是否存在以及 medication_details 是否有数据 #}
+                {% if record.medication_details %}
+                    {% for detail in record.medication_details %}
+                    <tr>
+                        <td>{{ detail.drug.name if detail.drug else 'N/A' }}</td>
+                        <td>{{ "%.2f"|format(detail.drug.price) if detail.drug else 'N/A' }}</td>
+                        <td>{{ "%.2f"|format(detail.drug.insurance_rate * 100) if detail.drug else 'N/A' }}%</td>
+                        <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>
+                        <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td>
+                        <td>
+                            {% set payment_status_found = '未知' %}
+                            {% if detail.registration and detail.registration.payments %}
+                                {% for payment in detail.registration.payments %}
+                                    {% if payment.fee_type == '药品费' %}
+                                        {# Assign and break using a variable to emulate break outside if #}
+                                        {% set payment_status_found = payment.pay_status %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {{ payment_status_found }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="6">暂无用药明细。</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+
+        <h5 class="mt-4">检查明细</h5>
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>检查项目</th>
+                    <th>价格</th>
+                    <th>医保报销比例</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if record.check_details %}
+                    {% for detail in record.check_details %}
+                    <tr>
+                        <td>{{ detail.check_item.name if detail.check_item else 'N/A' }}</td>
+                        <td>{{ "%.2f"|format(detail.check_item.price) if detail.check_item else 'N/A' }}</td>
+                        <td>{{ "%.2f"|format(detail.check_item.insurance_rate * 100) if detail.check_item else 'N/A' }}%</td>
+                        <td>
+                            {% set payment_status_found = '未知' %}
+                            {% if detail.registration and detail.registration.payments %}
+                                {% for payment in detail.registration.payments %}
+                                    {% if payment.fee_type == '检查费' %}
+                                        {# Assign and break using a variable to emulate break outside if #}
+                                        {% set payment_status_found = payment.pay_status %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {{ payment_status_found }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="4">暂无检查明细。</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+
+    </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('medicalrecord.medicalrecord_list') }}" class="btn btn-secondary mt-3">返回</a>
 </div>
 </body>
 </html>

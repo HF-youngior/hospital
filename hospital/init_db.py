@@ -310,52 +310,69 @@ with app.app_context():
     print("患者账号：")
     for i, user in enumerate(patient_users, 1):
         print(f"  用户名: {user.username}, 密码: patient{i}123")
+
     # SQLAlchemy 的 execute 不支持 GO 语句，需要分割执行
     # 先删除触发器语句
     drop_trigger_sql = """
     IF OBJECT_ID ('trg_check_schedule_duplicate', 'TR') IS NOT NULL
         DROP TRIGGER trg_check_schedule_duplicate;
+    IF OBJECT_ID ('generate_payment_after_insert_medication', 'TR') IS NOT NULL
+        DROP TRIGGER generate_payment_after_insert_medication;
+    IF OBJECT_ID ('generate_payment_after_insert_check', 'TR') IS NOT NULL
+        DROP TRIGGER generate_payment_after_insert_check;
     """
     with db.engine.connect() as conn:
         conn.execute(text(drop_trigger_sql))
         conn.commit()
 
-    # 创建触发器语句
-    create_trigger_sql = """
+
+    # 创建排班冲突触发器
+    create_trg_check_schedule_duplicate_sql = """
     CREATE TRIGGER trg_check_schedule_duplicate
     ON Schedule
     INSTEAD OF INSERT
     AS
     BEGIN
+        -- 同一个医生同一天同一时间段，重复排班
         IF EXISTS (
             SELECT 1
             FROM Schedule s
             INNER JOIN inserted i
-                ON 
-                (
-                    -- 同一个医生同一时间段重复
-                    (s.doctor_id = i.doctor_id AND s.date = i.date AND s.time_slot = i.time_slot)
-                    OR
-                    -- 不同医生同时间同诊室
-                    (s.date = i.date AND s.time_slot = i.time_slot AND s.room_address = i.room_address AND s.doctor_id <> i.doctor_id)
-                )
+                ON s.doctor_id = i.doctor_id
+                AND s.date = i.date
+                AND s.time_slot = i.time_slot
         )
         BEGIN
-            RAISERROR('该医生该时间段已存在排班，不能重复添加', 16, 1);
+            RAISERROR('排班冲突：该医生在该日期和时间段已有排班记录，不能重复添加。', 16, 1);
             ROLLBACK TRANSACTION;
             RETURN;
         END
-
+    
+        -- 不同医生在同一天同一时间段同一诊室，冲突
+        IF EXISTS (
+            SELECT 1
+            FROM Schedule s
+            INNER JOIN inserted i
+                ON s.date = i.date
+                AND s.time_slot = i.time_slot
+                AND s.room_address = i.room_address
+                AND s.doctor_id <> i.doctor_id
+        )
+        BEGIN
+            RAISERROR('排班冲突：已有其他医生在相同日期、时间段和诊室排班，不能重复安排。', 16, 1);
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END
+        -- 如果没有冲突，正常插入
         INSERT INTO Schedule (doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots)
         SELECT doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots
         FROM inserted;
     END;
     """
     with db.engine.connect() as conn:
-        conn.execute(text(create_trigger_sql))
+        conn.execute(text(create_trg_check_schedule_duplicate_sql))
         conn.commit()
 
-    print("排班冲突触发器已成功创建！")
     drop_proc_sql = """
         IF OBJECT_ID('sp_GetMedicalRecordInfo', 'P') IS NOT NULL
         DROP PROCEDURE sp_GetMedicalRecordInfo;
@@ -363,13 +380,14 @@ with app.app_context():
     with db.engine.connect() as conn:
         conn.execute(text(drop_proc_sql))
         conn.commit()
+
     create_proc_sql = """
     CREATE PROCEDURE sp_GetMedicalRecordInfo
         @registration_id INT
     AS
     BEGIN
         SET NOCOUNT ON;
-    
+
         -- 查询病人信息
         SELECT 
             p.patient_id,
@@ -387,7 +405,7 @@ with app.app_context():
         JOIN schedule s ON r.schedule_id = s.schedule_id
         JOIN doctor d ON s.doctor_id = d.doctor_id
         WHERE r.registration_id = @registration_id;
-    
+
        -- 查询药品明细
         SELECT 
             md.detail_id,
@@ -424,4 +442,5 @@ with app.app_context():
     with db.engine.connect() as conn:
         conn.execute(text(create_proc_sql))
         conn.commit()
+
     print("生成电子发票SP已经生成")

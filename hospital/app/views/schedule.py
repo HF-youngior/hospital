@@ -1,11 +1,12 @@
+import re
+
 from flask import Blueprint, render_template, redirect, url_for, flash, request
 from flask_login import login_required, current_user
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy import text
 
 from app.views.decorators import role_required
 from app.models import Schedule, Doctor, db
 from app.forms import ScheduleForm
-from datetime import datetime
 
 schedule_bp = Blueprint('schedule', __name__, url_prefix='/schedule')
 
@@ -32,30 +33,44 @@ def schedule_list():
 @role_required('admin')
 def add_schedule():
     form = ScheduleForm()
-
     doctors = Doctor.query.filter_by(status='在职').all()
     form.doctor_id.choices = [(d.doctor_id, f"{d.name} ({d.department})") for d in doctors]
 
     if form.validate_on_submit():
-        doctor = Doctor.query.get(form.doctor_id.data)
+        # 提取表单数据
+        doctor_id = form.doctor_id.data
+        date = form.date.data
+        time_slot = form.time_slot.data
+        room_address = form.room_address.data
+        reg_fee = form.reg_fee.data
+        total_slots = form.total_slots.data
+        remain_slots = total_slots  # 通常初始剩余数等于总数
 
-        schedule = Schedule(
-            doctor_id=form.doctor_id.data,
-            date=form.date.data,
-            time_slot=form.time_slot.data,
-            room_address=form.room_address.data,
-            reg_fee=form.reg_fee.data,
-            total_slots=form.total_slots.data,
-            remain_slots=form.total_slots.data
-        )
-        db.session.add(schedule)
+        # 用原生SQL插入，避免 OUTPUT 触发器冲突
+        insert_sql = text("""
+            INSERT INTO Schedule (doctor_id, date, time_slot, room_address, reg_fee, total_slots, remain_slots)
+            VALUES (:doctor_id, :date, :time_slot, :room_address, :reg_fee, :total_slots, :remain_slots)
+        """)
+
         try:
-            db.session.commit()
+            # 使用engine连接，自动commit事务
+            with db.engine.begin() as conn:
+                conn.execute(insert_sql, {
+                    'doctor_id': doctor_id,
+                    'date': date,
+                    'time_slot': time_slot,
+                    'room_address': room_address,
+                    'reg_fee': reg_fee,
+                    'total_slots': total_slots,
+                    'remain_slots': remain_slots
+                })
+
             flash('排班添加成功！')
             return redirect(url_for('schedule.schedule_list'))
-        except SQLAlchemyError as e:
-            db.session.rollback()
-            flash('该医生该时间段已存在排班，不能重复添加！', 'error')
+
+        except Exception as e:
+            # 插入失败，回滚并反馈错误
+            flash(f'排班添加失败，数据库错误：{str(e)}', 'error')
             return render_template('schedule_form.html', form=form, action='add')
 
     # GET请求或者表单验证失败，显示添加表单

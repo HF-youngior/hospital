@@ -593,26 +593,75 @@ def pay_check(registration_id):
 @login_required
 @role_required('patient')
 def view_medical_record(registration_id):
-    record = MedicalRecord.query.filter_by(registration_id=registration_id).first_or_404()
+    # 获取挂号记录，确保存在并属于当前病人
     registration = Registration.query.get_or_404(registration_id)
     if registration.patient_id != current_user.patient_id:
         flash('您无权查看此记录')
         return redirect(url_for('registration.registration_list'))
 
-    for detail in record.medication_details:
-        payment = Payment.query.filter_by(
-            registration_id=registration_id,
+    # 获取诊疗记录 (可能为空，如果没有完成就诊)
+    medical_record = MedicalRecord.query.filter_by(registration_id=registration_id).first()
+
+    # 获取用药明细和检查明细
+    medications = MedicationDetail.query.filter_by(registration_id=registration_id).all()
+    checks = CheckDetail.query.filter_by(registration_id=registration_id).all()
+
+    # 获取该挂号下的所有支付记录
+    payments = Payment.query.filter_by(registration_id=registration_id).all()
+
+    # 将所有需要的数据传递给模板
+    return render_template('medical_record_view.html',
+                           registration=registration, # 传递 registration 对象
+                           medical_record=medical_record, # 传递 medical_record 对象 (注意模板中可能依然用 record 命名)
+                           medications=medications,     # 传递药品明细列表
+                           checks=checks,               # 传递检查明细列表
+                           payments=payments)           # 传递支付记录列表
+
+
+@registration_bp.route('/pay_details')
+@login_required
+@role_required('patient')
+def pay_details():
+    """
+    显示当前患者的支付详情页面，列出未支付的药品费和检查费。
+    """
+    if not current_user.patient_id:
+        flash('请先完善您的个人信息以查看支付详情。', 'warning')
+        return redirect(url_for('patient.patient_profile'))
+
+    # 查询当前患者的所有挂号记录
+    registrations = Registration.query.filter_by(patient_id=current_user.patient_id).all()
+
+    unpaid_items = []
+    for reg in registrations:
+        # 查询未支付的药品费
+        medication_payments = Payment.query.filter_by(
+            registration_id=reg.registration_id,
             fee_type='药品费',
-            pay_status='已支付'
-        ).first()
-        detail.is_paid = bool(payment)
+            pay_status='未支付'
+        ).all()
+        if medication_payments:
+            for payment in medication_payments:
+                unpaid_items.append({
+                    'registration_id': reg.registration_id,
+                    'description': f'药品费 (挂号ID: {reg.registration_id})',
+                    'amount': payment.insurance_amount + payment.self_pay_amount,
+                    'type': 'medication'
+                })
 
-    for detail in record.check_details:
-        payment = Payment.query.filter_by(
-            registration_id=registration_id,
+        # 查询未支付的检查费
+        check_payments = Payment.query.filter_by(
+            registration_id=reg.registration_id,
             fee_type='检查费',
-            pay_status='已支付'
-        ).first()
-        detail.is_paid = bool(payment)
+            pay_status='未支付'
+        ).all()
+        if check_payments:
+            for payment in check_payments:
+                unpaid_items.append({
+                    'registration_id': reg.registration_id,
+                    'description': f'检查费 (挂号ID: {reg.registration_id})',
+                    'amount': payment.insurance_amount + payment.self_pay_amount,
+                    'type': 'check'
+                })
 
-    return render_template('medical_record_view.html', record=record)
+    return render_template('pay_details.html', unpaid_items=unpaid_items)
