@@ -310,18 +310,24 @@ with app.app_context():
     print("患者账号：")
     for i, user in enumerate(patient_users, 1):
         print(f"  用户名: {user.username}, 密码: patient{i}123")
+
     # SQLAlchemy 的 execute 不支持 GO 语句，需要分割执行
     # 先删除触发器语句
     drop_trigger_sql = """
     IF OBJECT_ID ('trg_check_schedule_duplicate', 'TR') IS NOT NULL
         DROP TRIGGER trg_check_schedule_duplicate;
+    IF OBJECT_ID ('generate_payment_after_insert_medication', 'TR') IS NOT NULL
+        DROP TRIGGER generate_payment_after_insert_medication;
+    IF OBJECT_ID ('generate_payment_after_insert_check', 'TR') IS NOT NULL
+        DROP TRIGGER generate_payment_after_insert_check;
     """
     with db.engine.connect() as conn:
         conn.execute(text(drop_trigger_sql))
         conn.commit()
 
-    # 创建触发器语句
-    create_trigger_sql = """
+
+    # 创建排班冲突触发器
+    create_trg_check_schedule_duplicate_sql = """
     CREATE TRIGGER trg_check_schedule_duplicate
     ON Schedule
     INSTEAD OF INSERT
@@ -364,10 +370,9 @@ with app.app_context():
     END;
     """
     with db.engine.connect() as conn:
-        conn.execute(text(create_trigger_sql))
+        conn.execute(text(create_trg_check_schedule_duplicate_sql))
         conn.commit()
 
-    print("排班冲突触发器已成功创建！")
     drop_proc_sql = """
         IF OBJECT_ID('sp_GetMedicalRecordInfo', 'P') IS NOT NULL
         DROP PROCEDURE sp_GetMedicalRecordInfo;
@@ -375,13 +380,14 @@ with app.app_context():
     with db.engine.connect() as conn:
         conn.execute(text(drop_proc_sql))
         conn.commit()
+
     create_proc_sql = """
     CREATE PROCEDURE sp_GetMedicalRecordInfo
         @registration_id INT
     AS
     BEGIN
         SET NOCOUNT ON;
-    
+
         -- 查询病人信息
         SELECT 
             p.patient_id,
@@ -399,7 +405,7 @@ with app.app_context():
         JOIN schedule s ON r.schedule_id = s.schedule_id
         JOIN doctor d ON s.doctor_id = d.doctor_id
         WHERE r.registration_id = @registration_id;
-    
+
        -- 查询药品明细
         SELECT 
             md.detail_id,
@@ -436,4 +442,5 @@ with app.app_context():
     with db.engine.connect() as conn:
         conn.execute(text(create_proc_sql))
         conn.commit()
+
     print("生成电子发票SP已经生成")

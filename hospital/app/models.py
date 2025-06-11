@@ -55,6 +55,7 @@ class Registration(db.Model):
     visit_status = db.Column(db.String(20))
     patient = db.relationship('Patient', foreign_keys=[patient_id], backref=db.backref('registrations', lazy='dynamic'), lazy='joined')
     schedule = db.relationship('Schedule', foreign_keys=[schedule_id], backref=db.backref('registrations', lazy='dynamic'), lazy='joined')
+    payments = db.relationship('Payment', backref='registration', lazy='dynamic')
 
 class MedicalRecord(db.Model):
     __tablename__ = 'medical_record'
