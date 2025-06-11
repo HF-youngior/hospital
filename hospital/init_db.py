@@ -356,3 +356,72 @@ with app.app_context():
         conn.commit()
 
     print("排班冲突触发器已成功创建！")
+    drop_proc_sql = """
+        IF OBJECT_ID('sp_GetMedicalRecordInfo', 'P') IS NOT NULL
+        DROP PROCEDURE sp_GetMedicalRecordInfo;
+    """
+    with db.engine.connect() as conn:
+        conn.execute(text(drop_proc_sql))
+        conn.commit()
+    create_proc_sql = """
+    CREATE PROCEDURE sp_GetMedicalRecordInfo
+        @registration_id INT
+    AS
+    BEGIN
+        SET NOCOUNT ON;
+    
+        -- 查询病人信息
+        SELECT 
+            p.patient_id,
+            p.name AS patient_name,
+            p.gender,
+            p.birth_date,
+            p.id_card,
+            p.contact,
+           r.reg_time,
+            d.name AS doctor_name,
+            d.department,
+            r.visit_status
+        FROM registration r
+        JOIN patient p ON r.patient_id = p.patient_id
+        JOIN schedule s ON r.schedule_id = s.schedule_id
+        JOIN doctor d ON s.doctor_id = d.doctor_id
+        WHERE r.registration_id = @registration_id;
+    
+       -- 查询药品明细
+        SELECT 
+            md.detail_id,
+            dr.name AS drug_name,
+            dr.specification,
+            dr.price,
+            1 AS quantity,
+            dr.price AS subtotal,
+            dr.insurance_rate
+        FROM medication_detail md
+        JOIN drug dr ON md.drug_id = dr.drug_id
+        WHERE md.registration_id = @registration_id;
+
+        -- 查询检查项目明细
+        SELECT 
+            cd.check_id,
+            ci.name AS item_name,
+            ci.price,
+            ci.insurance_rate
+        FROM check_detail cd
+        JOIN check_item ci ON cd.item_id = ci.item_id
+        WHERE cd.registration_id = @registration_id;
+
+    -- 费用信息
+        SELECT 
+            ISNULL(SUM(p.insurance_amount),0) AS total_insurance,
+            ISNULL(SUM(p.self_pay_amount),0) AS total_self_pay,
+            ISNULL(SUM(p.insurance_amount + p.self_pay_amount),0) AS total_fee
+        FROM payment p
+        WHERE p.registration_id = @registration_id;
+
+    END;
+    """
+    with db.engine.connect() as conn:
+        conn.execute(text(create_proc_sql))
+        conn.commit()
+    print("生成电子发票SP已经生成")

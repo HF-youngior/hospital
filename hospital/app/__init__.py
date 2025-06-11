@@ -35,6 +35,8 @@ def create_app():
         app.register_blueprint(registration_bp)
         from app.views.medicalrecord import medicalrecord  # 修正：改为 medicalrecord
         app.register_blueprint(medicalrecord)  # 修正：使用 medicalrecord
+        from app.views.invoice import invoice_bp
+        app.register_blueprint(invoice_bp)
 
     # 之前创造了login_manager实例，
     # user_loader这是 login_manager 对象的一个方法，这个方法本身被设计成一个装饰器。
