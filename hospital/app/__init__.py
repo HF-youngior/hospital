@@ -37,8 +37,10 @@ def create_app():
         app.register_blueprint(medicalrecord)  # 修正：使用 medicalrecord
         from app.views.invoice import invoice_bp
         app.register_blueprint(invoice_bp)
+        from app.views.inventory import inventory
+        app.register_blueprint(inventory)
 
-    # 之前创造了login_manager实例，
+        # 之前创造了login_manager实例，
     # user_loader这是 login_manager 对象的一个方法，这个方法本身被设计成一个装饰器。
     # 当你把它用作装饰器时（即在函数定义前加上 @ 符号），它会把你紧随其后定义的函数（在这里是 load_user 函数）注册给 login_manager。
     @login_manager.user_loader
