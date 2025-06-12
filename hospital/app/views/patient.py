@@ -87,9 +87,10 @@ def patient_profile():
         flash('您的账号未关联患者信息')
         return redirect(url_for('main.index'))
 
+    # 只显示未取消的挂号记录
     registrations = Registration.query.filter_by(
         patient_id=current_user.patient_id
-    ).order_by(desc(Registration.reg_time)).all()
+    ).filter(Registration.visit_status != '已取消').order_by(desc(Registration.reg_time)).all()
 
     return render_template('patient_profile.html', user=current_user, registrations=registrations)
 

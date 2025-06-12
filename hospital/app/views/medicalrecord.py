@@ -20,11 +20,12 @@ def list():
         print(f"Doctor: {current_user.doctor.name}, Schedules: {schedules.count()}")
         # 获取今天的挂号记录（包括待就诊和已就诊）
         registrations = Registration.query.filter(
-            Registration.schedule_id.in_([s.schedule_id for s in schedules])
+            Registration.schedule_id.in_([s.schedule_id for s in schedules]),
+            Registration.visit_status != '已取消'
         )
     elif current_user.role == 'admin':
         # 管理员可查看所有挂号记录
-        registrations = Registration.query
+        registrations = Registration.query.filter(Registration.visit_status != '已取消')
     else:
         registrations = Registration.query.filter(False)  # 空结果
 
