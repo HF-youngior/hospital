@@ -63,7 +63,7 @@ class ScheduleForm(FlaskForm):
     room_address = StringField('诊室地址', validators=[DataRequired(), Length(1, 100)])
     reg_fee = FloatField('挂号费', validators=[DataRequired(), NumberRange(min=0)])
     total_slots = IntegerField('号源总数', validators=[DataRequired(), NumberRange(min=1)])
-    remain_slots = IntegerField('剩余号源', validators=[DataRequired(), NumberRange(min=0)])
+    #remain_slots = IntegerField('剩余号源', validators=[DataRequired(), NumberRange(min=0)])
     submit = SubmitField('提交')
 
     def __init__(self, *args, **kwargs):

@@ -67,7 +67,6 @@
                 <td>{{ schedule.room_address }}</td>
                 <td>{{ schedule.reg_fee }} 元</td>
                 <td>{{ schedule.total_slots }}</td>
-                <td>{{ schedule.remain_slots }}</td>
                 {% if current_user.role == 'admin' %}
                 <td>
                     <a href="{{ url_for('schedule.edit_schedule', schedule_id=schedule.schedule_id) }}" class="btn btn-primary btn-sm">编辑</a>
