@@ -4,6 +4,7 @@ from app.views.decorators import role_required
 from app.models import Doctor, db, User
 from app.forms import DoctorForm, DoctorUserForm
 from werkzeug.security import generate_password_hash
+from sqlalchemy import or_, distinct
 # doctor.py 是系统中医生信息管理的后台控制中心，仅供管理员使用，负责医生的增删改查以及为医生创建登录账号。
 # url_prefix='/doctor': 此蓝图中定义的所有路由都会自动加上 '/doctor' 前缀
 doctor_bp = Blueprint('doctor', __name__, url_prefix='/doctor')
@@ -12,8 +13,61 @@ doctor_bp = Blueprint('doctor', __name__, url_prefix='/doctor')
 @role_required('admin') # 权限：只有 'admin' 角色的用户可以访问
 @login_required # 权限：用户必须已登录
 def doctor_list():
-    doctors = Doctor.query.all()
-    return render_template('doctor_list.html', doctors=doctors)
+    # 获取查询参数
+    search = request.args.get('search', '').strip()
+    department = request.args.get('department', '').strip()
+    title = request.args.get('title', '').strip()
+    status = request.args.get('status', '').strip()
+
+    # 构建基础查询
+    query = Doctor.query
+
+    # 应用搜索条件
+    if search:
+        if search.isdigit():
+            # 如果是数字，搜索ID
+            query = query.filter(Doctor.doctor_id == int(search))
+        else:
+            # 否则搜索姓名
+            query = query.filter(Doctor.name.like(f'%{search}%'))
+
+    # 应用筛选条件
+    if department:
+        query = query.filter(Doctor.department == department)
+    if title:
+        query = query.filter(Doctor.title == title)
+    if status:
+        query = query.filter(Doctor.status == status)
+
+    # 获取所有医生
+    doctors = query.all()
+
+    # 获取所有科室选项（用于下拉菜单）
+    departments = db.session.query(Doctor.department)\
+        .filter(Doctor.department.isnot(None))\
+        .filter(Doctor.department != '')\
+        .distinct()\
+        .order_by(Doctor.department)\
+        .all()
+    departments = [dept[0] for dept in departments]
+
+    # 获取所有职称选项（用于下拉菜单）
+    titles = db.session.query(Doctor.title)\
+        .filter(Doctor.title.isnot(None))\
+        .filter(Doctor.title != '')\
+        .distinct()\
+        .order_by(Doctor.title)\
+        .all()
+    titles = [title[0] for title in titles]
+
+    # 打印调试信息
+    print("Departments:", departments)
+    print("Titles:", titles)
+
+    return render_template('doctor_list.html', 
+                         doctors=doctors,
+                         departments=departments,
+                         titles=titles)
 
 @doctor_bp.route('/add', methods=['GET', 'POST'])
 @role_required('admin')

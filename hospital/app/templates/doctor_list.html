@@ -8,6 +8,53 @@
 <body>
 <div class="container mt-5">
     <h2>医生信息列表</h2>
+    
+    <!-- 搜索和筛选表单 -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">姓名/ID</label>
+                    <input type="text" class="form-control" name="search" value="{{ request.args.get('search', '') }}" placeholder="输入姓名或ID">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">科室</label>
+                    <select class="form-select" name="department">
+                        <option value="">全部科室</option>
+                        {% if departments %}
+                            {% for dept in departments %}
+                                <option value="{{ dept }}" {% if request.args.get('department') == dept %}selected{% endif %}>{{ dept }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">职称</label>
+                    <select class="form-select" name="title">
+                        <option value="">全部职称</option>
+                        {% if titles %}
+                            {% for title in titles %}
+                                <option value="{{ title }}" {% if request.args.get('title') == title %}selected{% endif %}>{{ title }}</option>
+                            {% endfor %}
+                        {% endif %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">状态</label>
+                    <select class="form-select" name="status">
+                        <option value="">全部状态</option>
+                        <option value="在职" {% if request.args.get('status') == '在职' %}selected{% endif %}>在职</option>
+                        <option value="离职" {% if request.args.get('status') == '离职' %}selected{% endif %}>离职</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">搜索</button>
+                    <a href="{{ url_for('doctor.doctor_list') }}" class="btn btn-secondary">重置</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <a href="{{ url_for('doctor.add_doctor') }}" class="btn btn-success mb-3">新增医生</a>
     <table class="table table-bordered table-hover mt-4">
         <thead>
