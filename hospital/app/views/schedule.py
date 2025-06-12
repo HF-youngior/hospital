@@ -1,6 +1,6 @@
 import re
 
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from sqlalchemy import text
 
@@ -119,4 +119,5 @@ def delete_schedule(schedule_id):
     db.session.delete(schedule)
     db.session.commit()
     flash('排班已删除！')
-    return redirect(url_for('schedule.schedule_list')) 
+    return redirect(url_for('schedule.schedule_list'))
+

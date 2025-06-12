@@ -8,7 +8,7 @@
 <body>
 <div class="container mt-5">
     <h2>{% if action == 'add' %}新增排班{% else %}编辑排班{% endif %}</h2>
-    
+
     {% with messages = get_flashed_messages() %}
     {% if messages %}
     <div class="alert alert-info">
@@ -18,56 +18,61 @@
     </div>
     {% endif %}
     {% endwith %}
-    
+
     <form method="post" class="mt-4">
         {{ form.hidden_tag() }}
-        
+
         <div class="row mb-3">
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     {{ form.doctor_id.label(class="form-label") }}
+                    {# 医生下拉框，内容已在后端forms.py和views/schedule.py中设置好，会显示姓名和科室 #}
                     {{ form.doctor_id(class="form-select") }}
                 </div>
-                
+
                 <div class="form-group mb-3">
                     {{ form.date.label(class="form-label") }}
                     {{ form.date(class="form-control", type="date") }}
                 </div>
-                
+
                 <div class="form-group mb-3">
                     {{ form.time_slot.label(class="form-label") }}
                     {{ form.time_slot(class="form-select") }}
                 </div>
-                
+
+                {# ！！！这里直接移除了原有的科室输入框的HTML代码 ！！！#}
+                {# 原本的代码：
                 <div class="form-group mb-3">
                     {{ form.department.label(class="form-label") }}
                     {{ form.department(class="form-control") }}
                 </div>
+                #}
             </div>
-            
+
             <div class="col-md-6">
                 <div class="form-group mb-3">
                     {{ form.room_address.label(class="form-label") }}
                     {{ form.room_address(class="form-control") }}
                 </div>
-                
+
                 <div class="form-group mb-3">
                     {{ form.reg_fee.label(class="form-label") }}
                     {{ form.reg_fee(class="form-control", type="number", step="0.01") }}
                 </div>
-                
+
                 <div class="form-group mb-3">
                     {{ form.total_slots.label(class="form-label") }}
                     {{ form.total_slots(class="form-control", type="number") }}
                 </div>
-                
+
                 <div class="form-group mb-3">
                     {{ form.remain_slots.label(class="form-label") }}
-                    {{ form.remain_slots(class="form-control", type="number") }}
+                    {# 剩余号源通常为只读，添加readonly属性 #}
+                    {{ form.remain_slots(class="form-control", type="number", readonly="readonly") }}
                 </div>
             </div>
         </div>
-        
+
         <div class="form-group mb-3">
             {{ form.submit(class="btn btn-primary") }}
             <a href="{{ url_for('schedule.schedule_list') }}" class="btn btn-secondary">返回</a>
@@ -81,12 +86,12 @@
         var dateInput = document.querySelector('input[type="date"]');
         if (!dateInput.value) {
             var today = new Date();
-            var yyyy = today.getFullYear();
-            var mm = String(today.getMonth() + 1).padStart(2, '0');
-            var dd = String(today.getDate()).padStart(2, '0');
-            dateInput.value = yyyy + '-' + mm + '-' + dd;
+            var year = today.getFullYear();
+            var month = String(today.getMonth() + 1).padStart(2, '0');
+            var day = String(today.getDate()).padStart(2, '0');
+            dateInput.value = year + '-' + month + '-' + day;
         }
     });
 </script>
 </body>
-</html> 
+</html>

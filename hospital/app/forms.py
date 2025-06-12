@@ -59,7 +59,7 @@ class ScheduleForm(FlaskForm):
         ('下午', '下午 (14:00-17:30)'),
         ('晚上', '晚上 (18:00-20:00)')
     ], validators=[DataRequired()])
-    department = StringField('科室', validators=[DataRequired(), Length(1, 50)])
+    #department = StringField('科室', validators=[DataRequired(), Length(1, 50)])
     room_address = StringField('诊室地址', validators=[DataRequired(), Length(1, 100)])
     reg_fee = FloatField('挂号费', validators=[DataRequired(), NumberRange(min=0)])
     total_slots = IntegerField('号源总数', validators=[DataRequired(), NumberRange(min=1)])
