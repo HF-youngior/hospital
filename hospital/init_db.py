@@ -356,3 +356,43 @@ with app.app_context():
         conn.commit()
 
     print("生成电子发票SP已经生成")
+
+    # 为所有已就诊的挂号生成诊疗记录、用药明细和检查明细
+    drugs = Drug.query.all()
+    check_items = CheckItem.query.all()
+    for reg in registrations:
+        if reg.visit_status == '已就诊':
+            # 检查是否已有病历，避免重复
+            if not MedicalRecord.query.filter_by(registration_id=reg.registration_id).first():
+                record = MedicalRecord(
+                    registration_id=reg.registration_id,
+                    visit_time=datetime.now(),
+                    chief_complaint=random.choice(['头痛', '咳嗽', '发热', '腹痛', '乏力']),
+                    present_illness='症状持续' + str(random.randint(1, 7)) + '天',
+                    past_history=random.choice(['无特殊病史', '高血压', '糖尿病', '过敏史']),
+                    allergy_history=random.choice(['无', '青霉素过敏', '花粉过敏']),
+                    physical_exam=random.choice(['体温正常', '咽部充血', '腹部压痛', '心肺无异常']),
+                    diagnosis=random.choice(['上呼吸道感染', '胃炎', '偏头痛', '支气管炎']),
+                    suggestion=random.choice(['多喝水', '注意休息', '按时服药', '复查'])
+                )
+                db.session.add(record)
+                db.session.flush()
+                # 随机生成1-2个用药明细
+                for drug in random.sample(drugs, min(2, len(drugs))):
+                    med_detail = MedicationDetail(
+                        registration_id=reg.registration_id,
+                        drug_id=drug.drug_id,
+                        quantity=random.randint(1, 3)
+                    )
+                    db.session.add(med_detail)
+                # 随机生成1-2个检查明细
+                for item in random.sample(check_items, min(2, len(check_items))):
+                    check_detail = CheckDetail(
+                        registration_id=reg.registration_id,
+                        item_id=item.item_id,
+                        result=random.choice(['正常', '轻度异常', '需复查']),
+                        quantity=1
+                    )
+                    db.session.add(check_detail)
+    db.session.commit()
+    print("所有已就诊挂号已补全病历、用药和检查明细！")

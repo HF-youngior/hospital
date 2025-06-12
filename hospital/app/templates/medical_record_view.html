@@ -84,6 +84,7 @@
             <table class="table table-bordered">
                 <thead>
                     <tr>
+                        <th>检查项目</th>
                         <th>检查结果</th>
                     </tr>
                 </thead>
@@ -91,11 +92,12 @@
                     {% if checks %}
                         {% for detail in checks %}
                         <tr>
+                            <td>{{ detail.check_item.name if detail.check_item else '未知项目' }}</td>
                             <td>{{ detail.result if detail.result else '未完成' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td>暂无检查明细。</td></tr>
+                        <tr><td colspan="2">暂无检查明细。</td></tr>
                     {% endif %}
                 </tbody>
             </table>
