@@ -6,8 +6,12 @@ from datetime import datetime,  timedelta # 确保导入 timedelta, 如果不直
 from datetime import date as py_date
 from flask import abort  # 确保导入 abort
 from flask import current_app
+import logging
 
 from sqlalchemy import desc,func
+
+# 设置日志
+logger = logging.getLogger(__name__)
 
 # 创建一个名为 'registration' 的蓝本，并指定 URL 前缀
 registration_bp = Blueprint('registration', __name__, url_prefix='/registration')
@@ -37,7 +41,7 @@ def registration_list():
         - 患者(patient): 查看自己的挂号记录 (通过 current_user.patient_id)。
         所有记录按挂号时间(reg_time)降序排列。
     """
-    print('进入registration_list')
+    logger.debug('进入registration_list')
     if current_user.role == 'admin':
         # 管理员获取所有挂号记录，并按挂号时间倒序排序
         registrations = Registration.query.order_by(desc(Registration.reg_time)).all()
@@ -59,7 +63,7 @@ def registration_list():
         else:
             registrations = []
     for reg in registrations:
-        print(f"Registration ID: {reg.registration_id}, Schedule ID: {reg.schedule_id}, Schedule: {reg.schedule}")
+        logger.debug(f"Registration ID: {reg.registration_id}, Schedule ID: {reg.schedule_id}, Schedule: {reg.schedule}")
     return render_template('registration_list.html', registrations=registrations, current_date=datetime.now().date())
 
 # 这是挂号入口111
@@ -69,10 +73,9 @@ def select_department_page():
     """
     显示科室选择页面，供用户选择要挂号的科室。
     """
-    print('进入select_department_page')
+    logger.debug('进入select_department_page')
     try:
         # 从 Doctor 模型中获取所有不重复的科室名称
-        # 假设 Doctor 模型有一个 'department' 字段存储科室名称
         departments_query = db.session.query(Doctor.department).distinct().order_by(Doctor.department).all()
 
         # 将查询结果 (元组列表) 转换为字符串列表，并过滤掉可能存在的 None 或空字符串
@@ -80,11 +83,10 @@ def select_department_page():
 
         if not departments:
             flash("目前系统中没有配置科室信息，无法进行挂号。", "warning")
-            # 可以重定向到首页或显示一个更友好的无科室页面
-            return redirect(url_for('main.index'))  # 假设 'main.index' 是您的主页路由
+            return redirect(url_for('main.index'))
 
     except Exception as e:
-        current_app.logger.error(f"获取科室列表失败: {str(e)}")
+        logger.error(f"获取科室列表失败: {str(e)}")
         flash("获取科室列表失败，请稍后重试或联系管理员。", "danger")
         departments = []  # 发生错误时返回空列表
 
@@ -196,7 +198,7 @@ def list_doctors_in_department(department_name):
     """
     # 模拟从数据库根据 department_name 获取医生列表
     # .get(department_name) 会在科室名称不存在时返回 None
-    print('进入list_doctors_in_department')
+    logger.debug('进入list_doctors_in_department')
     department_exists = db.session.query(
         Doctor.query.filter_by(department=department_name).exists()
     ).scalar()
@@ -225,7 +227,7 @@ def department_schedule_calendar(department_name):
     # 然后再用这些医生的 ID 去查询 Schedule 表。
 
     # 找到该科室下的所有医生 ID
-    print('进入department_schedule_calendar')
+    logger.debug('进入department_schedule_calendar')
     doctors_in_dept = Doctor.query.filter_by(department=department_name).all()
     if not doctors_in_dept:
         flash(f"未找到名为 '{department_name}' 的科室，或该科室下无医生。", "warning")
@@ -294,7 +296,7 @@ def list_departments():
     显示所有可供选择的科室列表。
     科室信息来源于 Doctor 表中的 department 字段。
     """
-    print('进入list_departments')
+    logger.debug('进入list_departments')
     try:
         # 查询 Doctor 表中所有不重复的科室名称
         # Doctor.department 是一个字符串字段
@@ -311,7 +313,7 @@ def list_departments():
             return redirect(url_for('main.index')) # 假设你有一个名为 'main.index' 的主页路由
 
     except Exception as e:
-        flash(f'加载科室列表失败，发生错误：{str(e)}', 'danger')
+        logger.error(f'加载科室列表失败: {str(e)}')
         # 记录日志
         # current_app.logger.error(f"加载科室列表失败: {str(e)}", exc_info=True)
         departments = [] # 出错时返回空列表，模板可以处理这种情况
@@ -325,7 +327,10 @@ def list_departments():
 @registration_bp.route('/schedules/<int:schedule_id>/create_appointment', methods=['GET', 'POST'])
 @login_required
 def create_appointment_page(schedule_id):
-    print('进入create_appointment_page')
+    """
+    创建预约挂号。
+    """
+    logger.debug('进入create_appointment_page')
     schedule_item = db.session.get(Schedule, schedule_id)
     if not schedule_item:
         abort(404)
@@ -360,25 +365,15 @@ def create_appointment_page(schedule_id):
             return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
 
         try:
-            # 获取挂号费
+            # 计算费用
             reg_fee = refreshed_schedule_item.reg_fee
-            # 假设医保报销比例为 80%
-            insurance_rate = 0.8
-            calculated_insurance_amount = round(reg_fee * insurance_rate, 2)
-            calculated_self_pay_amount = round(reg_fee - calculated_insurance_amount, 2)
-            total_payable_amount = calculated_insurance_amount + calculated_self_pay_amount
+            insurance_rate = 0.8  # 假设医保报销比例为80%
+            calculated_insurance_amount = reg_fee * insurance_rate
+            calculated_self_pay_amount = reg_fee * (1 - insurance_rate)
 
-            # --- 核心修改：在创建 Payment 记录之前检查余额并扣费 ---
-            if current_patient.insurance_balance < total_payable_amount:
-                # 余额不足，直接阻止挂号
-                flash(
-                    f'您的医保账户余额不足以支付挂号费（需 {total_payable_amount:.2f} 元），当前余额为 {current_patient.insurance_balance:.2f} 元。请充值或选择其他支付方式。',
-                    'danger')
-                db.session.rollback()  # 确保之前的任何操作都被回滚
+            if current_patient.insurance_balance < calculated_insurance_amount:
+                flash('您的医保余额不足以支付挂号费，请充值后再试。', 'warning')
                 return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
-
-            # 如果余额足够，则扣除余额
-            current_patient.insurance_balance -= total_payable_amount
 
             if refreshed_schedule_item.remain_slots > 0:
                 refreshed_schedule_item.remain_slots -= 1
@@ -390,30 +385,21 @@ def create_appointment_page(schedule_id):
                     visit_status='待就诊',
                 )
                 db.session.add(new_registration)
-                db.session.flush()  # 确保 new_registration.registration_id 在 Payment 创建前可用
+                db.session.flush()
 
-                # 创建 Payment 记录，状态直接为 '已支付'
                 new_payment = Payment(
                     registration_id=new_registration.registration_id,
                     fee_type='挂号费',
                     insurance_amount=calculated_insurance_amount,
                     self_pay_amount=calculated_self_pay_amount,
-                    pay_method='医保支付',  # 如果是医保余额扣除，直接设为医保支付
-                    pay_time=datetime.utcnow(),  # 记录支付时间
-                    pay_status='已支付'  # 直接设置为已支付
+                    pay_method='医保支付',
+                    pay_time=datetime.utcnow(),
+                    pay_status='已支付'
                 )
                 db.session.add(new_payment)
 
                 db.session.commit()
-
-
-
-
-
-                # 挂号成功且支付成功，重定向到挂号列表或成功详情页
                 return redirect(url_for('.registration_list'))
-                # 如果你想显示一个详细的成功页面，可以重定向到 registration_success_page
-                # return redirect(url_for('.registration_success_page', registration_id=new_registration.registration_id))
 
             else:
                 db.session.rollback()
@@ -424,7 +410,7 @@ def create_appointment_page(schedule_id):
 
         except Exception as e:
             db.session.rollback()
-            current_app.logger.error(
+            logger.error(
                 f"创建挂号记录或支付失败 for schedule_id {schedule_id}, patient_id {current_patient.patient_id}: {str(e)}")
             flash('挂号失败，发生内部错误，请稍后再试。', 'danger')
             return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
@@ -660,7 +646,7 @@ def process_payment(payment_id):
     except Exception as e:
         db.session.rollback()
         flash(f'支付失败：{str(e)}', 'danger')
-        current_app.logger.error(f"支付失败 for payment_id {payment_id}: {str(e)}")
+        logger.error(f"支付失败 for payment_id {payment_id}: {str(e)}")
 
     return redirect(url_for('registration.pay_details'))
 
