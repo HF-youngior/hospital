@@ -21,6 +21,13 @@ def doctor_list():
 def add_doctor():
     form = DoctorForm()
     if form.validate_on_submit():
+        # 按手机号检查是否已存在
+        existing = Doctor.query.filter_by(phone=form.phone.data).first()
+        if existing:
+            flash('该医生已存在，请勿重复添加')
+            return render_template('doctor_form.html', form=form, action='add')
+
+        # 如果没有重复，正常添加
         doctor = Doctor(
             name=form.name.data,
             gender=form.gender.data,
@@ -33,6 +40,7 @@ def add_doctor():
         db.session.commit()
         flash('医生添加成功！')
         return redirect(url_for('doctor.doctor_list'))
+
     return render_template('doctor_form.html', form=form, action='add')
 
 @doctor_bp.route('/edit/<int:doctor_id>', methods=['GET', 'POST'])
