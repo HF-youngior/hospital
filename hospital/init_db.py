@@ -1,3 +1,4 @@
+
 from app import create_app, db
 from app.models import User, Patient, Doctor, Schedule, Registration, Payment, MedicalRecord, MedicationDetail, \
     CheckDetail, Drug, CheckItem
@@ -140,6 +141,7 @@ with app.app_context():
             db.session.flush()
             registrations.append(reg)
 
+<<<<<<< HEAD
     # 7. 诊疗记录、用药、检查明细（部分挂号有）
     for reg in registrations:
         if reg.visit_status == '已就诊':
@@ -171,6 +173,65 @@ with app.app_context():
                     result=random.choice(['正常', '异常', '未完成'])
                 )
                 db.session.add(chk)
+=======
+    # 创建诊疗记录
+    medical_record = MedicalRecord(
+        registration_id=registrations[0].registration_id,
+        visit_time=datetime.now(),
+        chief_complaint='头痛一周',
+        present_illness='间断性头痛，无明显诱因',
+        past_history='无特殊病史',
+        allergy_history='无',
+        physical_exam='血压正常，心肺无异常',
+        diagnosis='偏头痛',
+        suggestion='服用阿司匹林，观察病情'
+    )
+    db.session.add(medical_record)
+    db.session.flush()
+
+    # 创建用药和检查明细
+    medication_detail = MedicationDetail(
+        registration_id=registrations[0].registration_id,
+        drug_id=drugs[0].drug_id,
+        quantity=1  # 新增字段
+    )
+    check_detail = CheckDetail(
+        registration_id=registrations[0].registration_id,
+        item_id=check_items[0].item_id,
+        result='未完成',
+        quantity=1  # 新增字段
+    )
+    db.session.add_all([medication_detail, check_detail])
+    db.session.flush()
+
+    # 创建药品和检查支付记录
+    patient = Patient.query.get(registrations[0].patient_id)
+    drug_payment = Payment(
+        registration_id=registrations[0].registration_id,
+        fee_type='药品费',
+        insurance_amount=drugs[0].price * 0.8,
+        self_pay_amount=drugs[0].price * 0.2,
+        pay_method='医保支付',
+        pay_time=datetime.now(),
+        pay_status='已支付'
+    )
+    db.session.add(drug_payment)
+
+    check_payment = Payment(
+        registration_id=registrations[0].registration_id,
+        fee_type='检查费',
+        insurance_amount=check_items[0].price * 0.8,
+        self_pay_amount=check_items[0].price * 0.2,
+        pay_method='医保支付',
+        pay_time=datetime.now(),
+        pay_status='已支付'
+    )
+    db.session.add(check_payment)
+
+    patient.insurance_balance -= (drugs[0].price * 0.8 + check_items[0].price * 0.8)
+
+    registrations[0].visit_status = '已就诊'
+>>>>>>> b54603b183947c42a2eec79cc3bc6a2416525cfb
 
     db.session.commit()
     print("数据库表已创建完成！")
@@ -196,7 +257,6 @@ with app.app_context():
         conn.execute(text(drop_trigger_sql))
         conn.commit()
 
-
     # 创建排班冲突触发器
     create_trg_check_schedule_duplicate_sql = """
     CREATE TRIGGER trg_check_schedule_duplicate
@@ -218,7 +278,7 @@ with app.app_context():
             ROLLBACK TRANSACTION;
             RETURN;
         END
-    
+
         -- 不同医生在同一天同一时间段同一诊室，冲突
         IF EXISTS (
             SELECT 1
@@ -283,8 +343,8 @@ with app.app_context():
             dr.name AS drug_name,
             dr.specification,
             dr.price,
-            1 AS quantity,
-            dr.price AS subtotal,
+            md.quantity,  -- 更新为使用 quantity 字段
+            dr.price * md.quantity AS subtotal,
             dr.insurance_rate
         FROM medication_detail md
         JOIN drug dr ON md.drug_id = dr.drug_id
@@ -295,6 +355,8 @@ with app.app_context():
             cd.check_id,
             ci.name AS item_name,
             ci.price,
+            cd.quantity,  -- 更新为使用 quantity 字段
+            ci.price * cd.quantity AS subtotal,
             ci.insurance_rate
         FROM check_detail cd
         JOIN check_item ci ON cd.item_id = ci.item_id
