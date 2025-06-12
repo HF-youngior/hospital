@@ -65,17 +65,17 @@ def generate(registration_id):
         pdf.cell(0, 10, "药品明细：", ln=True)
         for med in meds:
             pdf.multi_cell(0, 8,
-                           f"{med.drug_name} ({med.specification}) - {med.price}元  小计: {med.subtotal}元  医保比例: {med.insurance_rate * 100:.0f}%",
+                           f"{med.drug_name} ({med.specification}) - {med.price:.2f}元  小计: {med.subtotal:.2f}元  医保比例: {med.insurance_rate * 100:.0f}%",
                            ln=True)
 
         pdf.ln(5)
         pdf.cell(0, 10, "检查项目：", ln=True)
         for check in checks:
-            pdf.multi_cell(0, 8, f"{check.item_name} - {check.price}元  医保比例: {check.insurance_rate * 100:.0f}%",
+            pdf.multi_cell(0, 8, f"{check.item_name} - {check.price:.2f}元  医保比例: {check.insurance_rate * 100:.0f}%",
                            ln=True)
 
         pdf.ln(10)
-        pdf.cell(0, 10, f"总费用: {fee.total_fee}元 (医保支付: {fee.total_insurance}元, 自费: {fee.total_self_pay}元)",
+        pdf.cell(0, 10, f"总费用: {fee.total_fee:.2f}元 (医保支付: {fee.total_insurance:.2f}元, 自费: {fee.total_self_pay:.2f}元)",
                  ln=True)
 
         # 生成文件名：患者姓名_挂号时间.pdf

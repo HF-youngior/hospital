@@ -56,7 +56,7 @@
                 <td>国药准字H2024{{ "%04d"|format(drug.drug_id) }}</td>
                 <td>{{ drug.name }}</td>
                 <td>{{ drug.specification }}</td>
-                <td>{{ drug.price }} 元</td>
+                <td>{{ "%.2f"|format(drug.price) }} 元</td>
                 <td>{{ drug.usage }}</td>
                 <td>{{ drug.frequency }}</td>
                 <!-- ========== 核心修改点 2 ========== -->

@@ -14,9 +14,9 @@
             <h5 class="card-title">支付概览</h5>
             <p><strong>费用类型:</strong> {{ payment.fee_type }}</p>
             <p><strong>挂号ID:</strong> {{ payment.registration_id }}</p>
-            <p><strong>支付总额:</strong> {{ '%.2f' | format(payment.insurance_amount + payment.self_pay_amount) }} 元</p>
-            <p><strong>医保支付:</strong> {{ '%.2f' | format(payment.insurance_amount) }} 元</p>
-            <p><strong>自费支付:</strong> {{ '%.2f' | format(payment.self_pay_amount) }} 元</p>
+            <p><strong>支付总额:</strong> {{ "%.2f"|format(payment.insurance_amount + payment.self_pay_amount) }} 元</p>
+            <p><strong>医保支付:</strong> {{ "%.2f"|format(payment.insurance_amount) }} 元</p>
+            <p><strong>自费支付:</strong> {{ "%.2f"|format(payment.self_pay_amount) }} 元</p>
             <p><strong>支付方式:</strong> {{ payment.pay_method }}</p>
             <p><strong>支付时间:</strong> {{ payment.pay_time.strftime('%Y-%m-%d %H:%M') }}</p>
             <p><strong>支付状态:</strong> {{ payment.pay_status }}</p>

@@ -90,7 +90,7 @@
                     {% if checks %}
                         {% for detail in checks %}
                         <tr>
-                            <td>{{ detail.check_item.name if detail.check_item else '未知项目' }}</td>
+                            <td>{{ detail.check_item.name if detail.check_item else 'N/A' }}</td>
                             <td>{{ detail.result if detail.result else '未完成' }}</td>
                         </tr>
                         {% endfor %}

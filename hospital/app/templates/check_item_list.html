@@ -21,8 +21,8 @@
                 {{ form.query.label(class="form-label") }}
                 {{ form.query(class="form-control", placeholder="输入关键词...") }}
             </div>
-            <!-- ===================== 1. 已恢复为单个“搜索”按钮 ===================== -->
-            <!-- 这里只保留一个“搜索”按钮，没有多余的“返回”或“重置”按钮 -->
+            <!-- ===================== 1. 已恢复为单个"搜索"按钮 ===================== -->
+            <!-- 这里只保留一个"搜索"按钮，没有多余的"返回"或"重置"按钮 -->
             <div class="col-md-3">
                 {{ form.submit(class="btn btn-primary w-100", value="搜索") }}
             </div>
@@ -30,7 +30,7 @@
         </div>
     </form>
 
-    <!-- ===================== 2. 智能的“清除搜索”链接 ===================== -->
+    <!-- ===================== 2. 智能的"清除搜索"链接 ===================== -->
     <!-- 下面这部分只在用户执行了搜索后才会显示出来 -->
     {% if form.query.data and form.query.data|string|trim != '' %}
     <div class="mb-3 text-end">
@@ -69,7 +69,7 @@
                     {% endif %}
                 </td>
                 <td>{{ item.name }}</td>
-                <td>{{ item.price }} 元</td>
+                <td>{{ "%.2f"|format(item.price) }} 元</td>
                 <td>{{ item.department }}</td>
                 <td>{{ (item.insurance_rate * 100)|round(0) }}%</td>
                 {% if current_user.role == 'admin' %}
@@ -82,7 +82,7 @@
             <tr>
                 <td colspan="{% if current_user.role == 'admin' %}6{% else %}5{% endif %}">
                     {% if form.query.data and form.query.data|string|trim != '' %}
-                        没有找到匹配“{{ form.query.data }}”的记录。
+                        没有找到匹配"{{ form.query.data }}"的记录。
                     {% else %}
                         暂无检查项目记录。
                     {% endif %}
@@ -92,7 +92,7 @@
         </tbody>
     </table>
 
-    <!-- 页面底部的“返回主页”按钮，这个保持不变 -->
+    <!-- 页面底部的"返回主页"按钮，这个保持不变 -->
     <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

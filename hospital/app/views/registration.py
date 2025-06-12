@@ -381,7 +381,7 @@ def create_appointment_page(schedule_id):
                 new_registration = Registration(
                     patient_id=current_patient.patient_id,
                     schedule_id=refreshed_schedule_item.schedule_id,
-                    reg_time=datetime.utcnow(),
+                    reg_time=datetime.now(),
                     visit_status='待就诊',
                 )
                 db.session.add(new_registration)
@@ -393,7 +393,7 @@ def create_appointment_page(schedule_id):
                     insurance_amount=calculated_insurance_amount,
                     self_pay_amount=calculated_self_pay_amount,
                     pay_method='医保支付',
-                    pay_time=datetime.utcnow(),
+                    pay_time=datetime.now(),
                     pay_status='已支付'
                 )
                 db.session.add(new_payment)
