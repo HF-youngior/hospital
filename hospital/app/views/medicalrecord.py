@@ -225,9 +225,12 @@ def save():
         CheckDetail.query.filter_by(registration_id=registration.registration_id).delete()
 
         check_data = request.form.getlist('checks[]')
+        check_results = request.form.getlist('check_results[]')  # 获取检查结果
         logger.debug(f"Check data: {check_data}")
+        logger.debug(f"Check results: {check_results}")
+        
         new_check_details = []
-        for chk in check_data:
+        for i, chk in enumerate(check_data):
             if chk == 'none':
                 continue
             item_id = int(chk.split(':')[0])
@@ -237,21 +240,26 @@ def save():
                 logger.debug(f"Check item ID {item_id} not found")
                 continue
 
+            # 获取对应的检查结果，如果没有对应的结果则默认为"无"
+            check_result = check_results[i] if i < len(check_results) else "无"
+
             detail = CheckDetail(
                 registration_id=registration.registration_id,
                 item_id=item_id,
                 quantity=1,  # 检查项目固定数量为 1
-                result=None
+                result=check_result
             )
             new_check_details.append(detail)
 
-            # 费用计算
-            item_cost = check_item.price
-            insurance_covered = item_cost * check_item.insurance_rate
-            self_paid = item_cost - insurance_covered
-            total_check_fee += item_cost
-            total_check_insurance_amount += insurance_covered
-            total_check_self_pay_amount += self_paid
+            # 只有当检查结果不是"无"时才计算费用
+            if check_result.lower() != "无":
+                # 费用计算
+                item_cost = check_item.price
+                insurance_covered = item_cost * check_item.insurance_rate
+                self_paid = item_cost - insurance_covered
+                total_check_fee += item_cost
+                total_check_insurance_amount += insurance_covered
+                total_check_self_pay_amount += self_paid
 
         for detail in new_check_details:
             db.session.add(detail)
@@ -269,6 +277,7 @@ def save():
             )
             db.session.add(payment_medication)
 
+        # 只有当有实际检查费用时才创建检查费支付记录
         if total_check_fee > 0:
             payment_check = Payment(
                 registration_id=registration.registration_id,

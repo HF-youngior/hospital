@@ -219,13 +219,14 @@
                                             </div>
                                         </div>
                         <div id="check-search-results">
-                            <table class="table table-striped">
+                            <table class="table table-bordered">
                                 <thead>
                                     <tr>
                                         <th>选择</th>
                                         <th>检查项目</th>
                                         <th>科室</th>
                                         <th>价格</th>
+                                        <th>检查结果</th>
                                     </tr>
                                 </thead>
                                 <tbody id="check-list">
@@ -233,14 +234,17 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" class="check-item" data-id="{{ item.item_id }}" {% if item.item_id in selected_checks|map(attribute='item_id')|list %}checked{% endif %}>
-                                    </td>
+                                        </td>
                                         <td>{{ item.name }}</td>
                                         <td>{{ item.department }}</td>
                                         <td>{{ item.price }} 元</td>
-                                </tr>
+                                        <td>
+                                            <input type="text" class="form-control check-result" data-id="{{ item.item_id }}" placeholder="请输入检查结果，如患者拒绝检查请填写'无'">
+                                        </td>
+                                    </tr>
                                     {% endfor %}
-                            </tbody>
-                        </table>
+                                </tbody>
+                            </table>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="no-check" name="no_check">
@@ -443,6 +447,11 @@
                             <td>${check.name}</td>
                             <td>${check.department}</td>
                             <td>${check.price} 元</td>
+                            <td>
+                                <input type="text" class="form-control check-result" data-id="${check.item_id}" 
+                                       placeholder="请输入检查结果，如患者拒绝检查请填写'无'"
+                                       value="${selectedChecks.find(c => c.id === check.item_id)?.result || ''}">
+                            </td>
                         `;
                         checkList.appendChild(row);
                     });
@@ -491,10 +500,12 @@
                 checkbox.addEventListener('change', function() {
                     const itemId = this.dataset.id;
                     const itemName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                    const resultInput = this.closest('tr').querySelector('.check-result');
+                    const result = resultInput ? resultInput.value || '' : '';
                     
                     if (this.checked) {
                         if (!selectedChecks.find(c => c.id === itemId)) {
-                            selectedChecks.push({ id: itemId });
+                            selectedChecks.push({ id: itemId, result: result });
                         }
                     } else {
                         const index = selectedChecks.findIndex(c => c.id === itemId);
@@ -505,6 +516,22 @@
                     
                     updateSelectedChecks();
                     document.getElementById('no-check').checked = false;
+                });
+            });
+
+            // 同时绑定结果输入框变更事件
+            document.querySelectorAll('.check-result').forEach(input => {
+                input.addEventListener('change', function() {
+                    const itemId = this.dataset.id;
+                    const checkbox = document.querySelector(`.check-item[data-id="${itemId}"]`);
+                    
+                    if (checkbox && checkbox.checked) {
+                        const checkIndex = selectedChecks.findIndex(c => c.id === itemId);
+                        if (checkIndex !== -1) {
+                            selectedChecks[checkIndex].result = this.value;
+                            updateSelectedChecks();
+                        }
+                    }
                 });
             });
         }
@@ -606,7 +633,13 @@
                 li.dataset.id = check.id;
                 li.innerHTML = `
                     ${itemName}
-                    <button type="button" class="btn btn-danger btn-sm float-end remove-check">移除</button>
+                    <div class="mt-2">
+                        <input type="text" class="form-control selected-check-result" 
+                               name="check_results[]" 
+                               placeholder="请输入检查结果，如患者拒绝检查请填写'无'"
+                               value="${check.result || ''}">
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm float-end remove-check mt-2">移除</button>
                 `;
                 ul.appendChild(li);
             });
@@ -616,7 +649,7 @@
         // 更新表单输入
         function updateFormInputs() {
             const form = document.getElementById('medical-record-form');
-            let inputs = form.querySelectorAll('input[name="medications[]"], input[name="checks[]"]');
+            let inputs = form.querySelectorAll('input[name="medications[]"], input[name="checks[]"], input[name="check_results[]"]');
             inputs.forEach(input => input.remove());
 
             if (document.getElementById('no-medication').checked || selectedDrugs.length === 0) {
@@ -648,6 +681,13 @@
                     input.name = 'checks[]';
                     input.value = `${check.id}:1`;
                     form.appendChild(input);
+
+                    // 为每个检查项目添加检查结果
+                    const resultInput = document.createElement('input');
+                    resultInput.type = 'hidden';
+                    resultInput.name = 'check_results[]';
+                    resultInput.value = check.result || '';
+                    form.appendChild(resultInput);
                 });
             }
         }
@@ -671,9 +711,37 @@
             }
         });
 
+        // 添加检查项目
+        function addCheck(item) {
+            const checkList = document.getElementById('checkList');
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${item.name}</td>
+                <td>${item.price}</td>
+                <td>${item.insurance_rate * 100}%</td>
+                <td>
+                    <input type="text" class="form-control check-result" name="check_results[]"
+                           placeholder="请输入检查结果，如患者拒绝检查请填写'无'">
+                </td>
+                <td>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeCheck(this)">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            checkList.appendChild(row);
+        }
+
         // 调试：监听表单提交
         document.getElementById('medical-record-form').addEventListener('submit', function (e) {
             console.log('Medical record form submitted');
+            
+            // 调试日志：确认检查结果是否已添加到表单
+            const checkResults = this.querySelectorAll('input[name="check_results[]"]');
+            console.log(`检查结果数量: ${checkResults.length}`);
+            checkResults.forEach(input => {
+                console.log(`检查结果: ${input.value}`);
+            });
         });
     });
 </script>

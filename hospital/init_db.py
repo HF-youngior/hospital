@@ -154,6 +154,8 @@ with app.app_context():
             db.session.flush()
             registrations.append(reg)
 
+
+
     # 创建诊疗记录
     medical_record = MedicalRecord(
         registration_id=registrations[0].registration_id,
@@ -211,6 +213,7 @@ with app.app_context():
     patient.insurance_balance -= (drugs[0].price * 0.8 + check_items[0].price * 0.8)
 
     registrations[0].visit_status = '已就诊'
+
 
     db.session.commit()
     print("数据库表已创建完成！")
