@@ -494,100 +494,7 @@ def cancel_registration(registration_id):
         flash(f'取消挂号失败：{str(e)}')
         print(f"Error cancelling registration: {str(e)}")
     return redirect(url_for('registration.registration_list'))
-# 支付药
-@registration_bp.route('/pay/medication/<int:registration_id>', methods=['POST'])
-@login_required
-@role_required('patient')
-def pay_medication(registration_id):
-    registration = Registration.query.get_or_404(registration_id)
-    if registration.patient_id != current_user.patient_id:
-        flash('您无权操作此记录')
-        return redirect(url_for('registration.registration_list'))
 
-    medication_details = MedicationDetail.query.filter_by(registration_id=registration_id).all()
-    if not medication_details:
-        flash('没有需要支付的药品')
-        return redirect(url_for('registration.registration_list'))
-
-    patient = Patient.query.get(registration.patient_id)
-    total_amount = 0
-    for detail in medication_details:
-        drug = Drug.query.get(detail.drug_id)
-        total_amount += drug.price
-
-    insurance_rate = sum([Drug.query.get(d.drug_id).insurance_rate for d in medication_details]) / len(medication_details)
-    insurance_amount = total_amount * insurance_rate
-    self_pay_amount = total_amount * (1 - insurance_rate)
-
-    if patient.insurance_balance < insurance_amount:
-        flash('医保余额不足')
-        return redirect(url_for('registration.registration_list'))
-
-    try:
-        payment = Payment(
-            registration_id=registration_id,
-            fee_type='药品费',
-            insurance_amount=insurance_amount,
-            self_pay_amount=self_pay_amount,
-            pay_method='医保支付',
-            pay_time=datetime.now(),
-            pay_status='已支付'
-        )
-        db.session.add(payment)
-        patient.insurance_balance -= insurance_amount
-        db.session.commit()
-        flash('药品费用支付成功')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'药品费用支付失败：{str(e)}')
-    return redirect(url_for('registration.registration_list'))
-# 支付检查
-@registration_bp.route('/pay/check/<int:registration_id>', methods=['POST'])
-@login_required
-@role_required('patient')
-def pay_check(registration_id):
-    registration = Registration.query.get_or_404(registration_id)
-    if registration.patient_id != current_user.patient_id:
-        flash('您无权操作此记录')
-        return redirect(url_for('registration.registration_list'))
-
-    check_details = CheckDetail.query.filter_by(registration_id=registration_id).all()
-    if not check_details:
-        flash('没有需要支付的检查项目')
-        return redirect(url_for('registration.registration_list'))
-
-    patient = Patient.query.get(registration.patient_id)
-    total_amount = 0
-    for detail in check_details:
-        item = CheckItem.query.get(detail.item_id)
-        total_amount += item.price
-
-    insurance_rate = sum([CheckItem.query.get(d.item_id).insurance_rate for d in check_details]) / len(check_details)
-    insurance_amount = total_amount * insurance_rate
-    self_pay_amount = total_amount * (1 - insurance_rate)
-
-    if patient.insurance_balance < insurance_amount:
-        flash('医保余额不足')
-        return redirect(url_for('registration.registration_list'))
-
-    try:
-        payment = Payment(
-            registration_id=registration_id,
-            fee_type='检查费',
-            insurance_amount=insurance_amount,
-            self_pay_amount=self_pay_amount,
-            pay_method='医保支付',
-            pay_time=datetime.now(),
-            pay_status='已支付'
-        )
-        db.session.add(payment)
-        patient.insurance_balance -= insurance_amount
-        db.session.commit()
-        flash('检查费用支付成功')
-    except Exception as e:
-        db.session.rollback()
-        flash(f'检查费用支付失败：{str(e)}')
-    return redirect(url_for('registration.registration_list'))
 #看支付情况
 @registration_bp.route('/medicalrecord/<int:registration_id>', endpoint='registration_view_medical_record')
 @login_required
@@ -623,45 +530,157 @@ def view_medical_record(registration_id):
 @role_required('patient')
 def pay_details():
     """
-    显示当前患者的支付详情页面，列出未支付的药品费和检查费。
+    显示当前患者的支付详情页面，分为待支付和已支付两栏。
     """
     if not current_user.patient_id:
         flash('请先完善您的个人信息以查看支付详情。', 'warning')
         return redirect(url_for('patient.patient_profile'))
 
-    # 查询当前患者的所有挂号记录
-    registrations = Registration.query.filter_by(patient_id=current_user.patient_id).all()
+    patient_id = current_user.patient_id
 
-    unpaid_items = []
-    for reg in registrations:
-        # 查询未支付的药品费
-        medication_payments = Payment.query.filter_by(
-            registration_id=reg.registration_id,
-            fee_type='药品费',
-            pay_status='未支付'
-        ).all()
-        if medication_payments:
-            for payment in medication_payments:
-                unpaid_items.append({
-                    'registration_id': reg.registration_id,
-                    'description': f'药品费 (挂号ID: {reg.registration_id})',
-                    'amount': payment.insurance_amount + payment.self_pay_amount,
-                    'type': 'medication'
-                })
+    # 获取当前患者的所有支付记录
+    # 按照支付时间降序排列，以便最新的记录在前
+    all_payments = Payment.query.join(Registration).filter(
+        Registration.patient_id == patient_id
+    ).order_by(desc(Payment.pay_time)).all()
 
-        # 查询未支付的检查费
-        check_payments = Payment.query.filter_by(
-            registration_id=reg.registration_id,
-            fee_type='检查费',
-            pay_status='未支付'
-        ).all()
-        if check_payments:
-            for payment in check_payments:
-                unpaid_items.append({
-                    'registration_id': reg.registration_id,
-                    'description': f'检查费 (挂号ID: {reg.registration_id})',
-                    'amount': payment.insurance_amount + payment.self_pay_amount,
-                    'type': 'check'
-                })
+    # 将支付记录分为待支付和已支付两类
+    unpaid_payments = []
+    paid_payments = []
 
-    return render_template('pay_details.html', unpaid_items=unpaid_items)
+    # 为了更好的展示，我们将已支付记录按 Registration 分组，方便用户查看某次就诊的所有支付
+    paid_payments_by_registration = {}
+
+    for payment in all_payments:
+        if payment.pay_status == '待支付':
+            # 为待支付项添加一个用于支付动作的唯一ID
+            unpaid_payments.append({
+                'payment_id': payment.payment_id,  # 使用 payment_id 作为唯一标识符
+                'description': f'{payment.fee_type} (挂号ID: {payment.registration_id})',
+                'amount': payment.insurance_amount + payment.self_pay_amount,
+                'type': payment.fee_type  # 可以用于前端判断是药品还是检查
+            })
+        elif payment.pay_status == '已支付':
+            # 将已支付记录按挂号ID分组
+            reg_id = payment.registration_id
+            if reg_id not in paid_payments_by_registration:
+                # 获取挂号记录信息，方便在模板中展示就诊日期、医生等
+                registration_info = Registration.query.get(reg_id)
+                paid_payments_by_registration[reg_id] = {
+                    'registration_id': reg_id,
+                    'reg_time': registration_info.reg_time if registration_info else None,
+                    'doctor_name': registration_info.schedule.doctor.name if registration_info and registration_info.schedule and registration_info.schedule.doctor else '未知医生',
+                    'items': []
+                }
+            paid_payments_by_registration[reg_id]['items'].append({
+                'payment_id': payment.payment_id,
+                'fee_type': payment.fee_type,
+                'total_amount': payment.insurance_amount + payment.self_pay_amount,
+                'pay_time': payment.pay_time
+            })
+
+    # 将字典转换为列表，以便在模板中迭代
+    paid_payments = list(paid_payments_by_registration.values())
+    # 可以按挂号时间再排序一下，确保最近的挂号记录在前
+    paid_payments.sort(key=lambda x: x['reg_time'] if x['reg_time'] else datetime.min, reverse=True)
+
+    return render_template('pay_details.html',
+                           unpaid_payments=unpaid_payments,
+                           paid_payments=paid_payments)
+
+
+# --- 新增的视图函数：处理具体的支付动作 ---
+@registration_bp.route('/process_payment/<int:payment_id>', methods=['POST'])
+@login_required
+@role_required('patient')
+def process_payment(payment_id):
+    """
+    处理单个待支付项的支付请求。
+    """
+    payment = Payment.query.get_or_404(payment_id)
+
+    # 权限检查：确保该支付记录属于当前用户
+    if payment.registration.patient_id != current_user.patient_id:
+        flash('您无权支付此项费用。', 'danger')
+        return redirect(url_for('registration.pay_details'))
+
+    # 检查支付状态
+    if payment.pay_status == '已支付':
+        flash('此项费用已支付，无需重复操作。', 'info')
+        return redirect(url_for('registration.pay_details'))
+
+    patient = current_user.patient  # patient对象已经通过user关联加载
+
+    # 检查医保余额
+    total_fee = payment.insurance_amount + payment.self_pay_amount
+    # 这里为了简化，我们假设支付都是从医保余额扣除自付部分，或者仅使用医保支付
+    # 实际项目中，可能需要更复杂的支付方式选择逻辑
+    if patient.insurance_balance < payment.insurance_amount:  # 假设医保支付是扣除医保余额
+        flash('医保余额不足以支付此项费用。', 'danger')
+        return redirect(url_for('registration.pay_details'))
+
+    try:
+        # 更新患者医保余额
+        patient.insurance_balance -= payment.insurance_amount
+        # 更新支付记录状态
+        payment.pay_status = '已支付'
+        payment.pay_method = '医保支付'  # 假设通过此页面支付都是医保支付，或可根据前端选择
+        payment.pay_time = datetime.now()
+
+        db.session.commit()
+       # flash(f'{payment.fee_type} 支付成功！', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'支付失败：{str(e)}', 'danger')
+        current_app.logger.error(f"支付失败 for payment_id {payment_id}: {str(e)}")
+
+    return redirect(url_for('registration.pay_details'))
+
+
+# --- 新增的视图函数：查看支付明细 ---
+@registration_bp.route('/pay_details/<int:payment_id>/view_detail')
+@login_required
+@role_required('patient')
+def view_payment_detail(payment_id):
+    """
+    显示单个支付记录的具体明细（药品或检查项目）。
+    """
+    payment = Payment.query.get_or_404(payment_id)
+
+    # 权限检查
+    if payment.registration.patient_id != current_user.patient_id:
+        flash('您无权查看此支付详情。', 'danger')
+        return redirect(url_for('registration.pay_details'))
+
+    medication_details = []
+    check_details = []
+
+    # 根据 payment.fee_type 判断并获取对应明细
+    # 注意：Payment 记录是聚合的，MedicationDetail 和 CheckDetail 是细分的
+    # 我们需要通过 payment.registration_id 来获取该次挂号的所有药品/检查明细
+    # 理想情况下，Payment 应该和具体的 MedicationDetail/CheckDetail 有个直接的联系
+    # 或者 Payment 模型的 fee_type 就直接是 '药品费' 或 '检查费'
+    # 并且 MedicalRecord 关联到 Registration，然后 MedicalRecord 再关联到 MedicationDetail 和 CheckDetail。
+
+    # 确认一下逻辑：一个 Payment 记录对应一次挂号的药品总费用或检查总费用。
+    # 所以，查看明细应该根据这个 Payment 的 registration_id 来查询 MedicalRecord 关联的所有明细。
+    medical_record_for_reg = MedicalRecord.query.filter_by(registration_id=payment.registration_id).first()
+
+    if medical_record_for_reg:
+        if payment.fee_type == '药品费':
+            # 获取该挂号记录下的所有药品明细
+            medication_details = MedicationDetail.query.filter_by(
+                registration_id=payment.registration_id
+            ).all()
+        elif payment.fee_type == '检查费':
+            # 获取该挂号记录下的所有检查明细
+            check_details = CheckDetail.query.filter_by(
+                registration_id=payment.registration_id
+            ).all()
+        # 对于挂号费等其他类型，可能没有具体的明细列表
+        # 或者可以考虑在 MedicalRecord 中加入一个诊疗项目明细表来统一管理
+
+    return render_template('payment_detail_view.html',
+                           payment=payment,
+                           medication_details=medication_details,
+                           check_details=check_details)

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>支付明细 - 医院信息管理系统</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+</head>
+<body>
+<div class="container mt-5">
+    <h2>{{ payment.fee_type }} 支付明细 (支付ID: {{ payment.payment_id }})</h2>
+
+    <div class="card mt-4">
+        <div class="card-body">
+            <h5 class="card-title">支付概览</h5>
+            <p><strong>费用类型:</strong> {{ payment.fee_type }}</p>
+            <p><strong>挂号ID:</strong> {{ payment.registration_id }}</p>
+            <p><strong>支付总额:</strong> {{ '%.2f' | format(payment.insurance_amount + payment.self_pay_amount) }} 元</p>
+            <p><strong>医保支付:</strong> {{ '%.2f' | format(payment.insurance_amount) }} 元</p>
+            <p><strong>自费支付:</strong> {{ '%.2f' | format(payment.self_pay_amount) }} 元</p>
+            <p><strong>支付方式:</strong> {{ payment.pay_method }}</p>
+            <p><strong>支付时间:</strong> {{ payment.pay_time.strftime('%Y-%m-%d %H:%M') }}</p>
+            <p><strong>支付状态:</strong> {{ payment.pay_status }}</p>
+        </div>
+    </div>
+
+    {% if medication_details %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">药品明细</h5>
+                <ul class="list-group list-group-flush">
+                    {% for medication in medication_details %}
+                        <li class="list-group-item">
+                            <strong>药品名称:</strong> {{ medication.drug.name }} ({{ medication.drug.specification }})<br>
+                            <strong>单价:</strong> {{ '%.2f' | format(medication.drug.price) }} 元<br>
+                            </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if check_details %}
+        <div class="card mt-4">
+            <div class="card-body">
+                <h5 class="card-title">检查项目明细</h5>
+                <ul class="list-group list-group-flush">
+                    {% for check in check_details %}
+                        <li class="list-group-item">
+                            <strong>项目名称:</strong> {{ check.check_item.name }}<br>
+                            <strong>单价:</strong> {{ '%.2f' | format(check.check_item.price) }} 元<br>
+                            {% if check.result %}
+                                <strong>检查结果:</strong> {{ check.result }}
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('registration.pay_details') }}" class="btn btn-secondary">返回我的支付</a>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

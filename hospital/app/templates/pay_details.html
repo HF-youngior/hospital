@@ -2,34 +2,83 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>支付详情 - 医院信息管理系统</title>
+    <title>我的支付 - 医院信息管理系统</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <style>
+        .payment-section {
+            border-right: 1px solid #dee2e6; /* 分隔线 */
+        }
+        .list-group-item.paid {
+            cursor: pointer; /* 表示可点击 */
+        }
+    </style>
 </head>
 <body>
 <div class="container mt-5">
-    <h2>支付详情</h2>
-    <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">待支付费用</h5>
-            <ul class="list-group">
-                {% if unpaid_items %}
-                    {% for item in unpaid_items %}
-                        <li class="list-group-item">
-                            {{ item.description }}: {{ item.amount }} 元
-                            <form action="{{ url_for('registration.process_payment', item_id=item.id) }}" method="POST" style="display:inline;">
-                                <button type="submit" class="btn btn-success btn-sm">支付</button>
-                            </form>
-                        </li>
-                    {% endfor %}
-                {% else %}
-                    <li class="list-group-item text-success">暂无待支付费用。</li>
-                {% endif %}
-            </ul>
-            <div class="mt-3">
-                <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
+    <h2>我的支付中心</h2>
+    <div class="row mt-4">
+        <div class="col-md-6 payment-section">
+            <div class="card">
+                <div class="card-header bg-warning text-white">
+                    <h5 class="mb-0">待支付费用</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if unpaid_payments %}
+                            {% for payment in unpaid_payments %}
+                                <li class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span>{{ payment.description }}: <strong class="text-danger">{{ '%.2f' | format(payment.amount) }}</strong> 元</span>
+                                    <form action="{{ url_for('registration.process_payment', payment_id=payment.payment_id) }}" method="POST" style="display:inline;">
+                                        <button type="submit" class="btn btn-success btn-sm">立即支付</button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="list-group-item text-success">暂无待支付费用。</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0">已支付记录</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% if paid_payments %}
+                            {% for registration_group in paid_payments %}
+                                <li class="list-group-item">
+                                    <h6 class="mb-1 text-primary">挂号ID: {{ registration_group.registration_id }} - {{ registration_group.reg_time.strftime('%Y-%m-%d %H:%M') if registration_group.reg_time else '未知时间' }} ({{ registration_group.doctor_name }})</h6>
+                                    <ul class="list-group list-group-flush mt-2">
+                                        {% for item in registration_group['items'] %}
+                                            <li class="list-group-item list-group-item-action paid d-flex justify-content-between align-items-center"
+                                                onclick="window.location.href='{{ url_for('registration.view_payment_detail', payment_id=item.payment_id) }}'">
+                                                <span>
+                                                    {{ item.fee_type }}: <strong class="text-secondary">{{ '%.2f' | format(item.total_amount) }}</strong> 元
+                                                    <small class="text-muted ms-2">({{ item.pay_time.strftime('%Y-%m-%d %H:%M') if item.pay_time else '未知时间' }})</small>
+                                                </span>
+                                                <i class="fas fa-chevron-right"></i> </li>
+                                        {% endfor %}
+                                    </ul>
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <li class="list-group-item text-muted">暂无已支付记录。</li>
+                        {% endif %}
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
+    <div class="mt-4 text-center">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
+    </div>
 </div>
+
+<script src="https://kit.fontawesome.com/your_font_awesome_kit_code.js" crossorigin="anonymous"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
