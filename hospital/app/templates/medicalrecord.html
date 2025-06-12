@@ -34,7 +34,7 @@
                     {% for reg in registrations %}
                     <tr>
                         <td>{{ reg.registration_id }}</td>
-                        <td>{{ reg.patient_id }}</td>
+                        <td>P25{{ "%02d"|format((reg.patient_id - 1) % 12 + 1) }}-{{ "%04d"|format(reg.patient_id) }}</td>
                         <td>{{ reg.patient.name }}</td>
                         <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
                         <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
@@ -67,7 +67,11 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">患者ID</label>
-                        <input class="form-control" value="{{ patient_id }}" disabled>
+                        <input
+    class="form-control"
+    value="P25{{ '%02d'|format((patient_id - 1) % 12 + 1) }}-{{ '%04d'|format(patient_id) }}"
+    disabled
+>
                     </div>
                     <div class="col-md-6">
                         <label class="form-label">挂号ID</label>
