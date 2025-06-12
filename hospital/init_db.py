@@ -1,4 +1,3 @@
-
 from app import create_app, db
 from app.models import User, Patient, Doctor, Schedule, Registration, Payment, MedicalRecord, MedicationDetail, \
     CheckDetail, Drug, CheckItem
@@ -6,6 +5,19 @@ from werkzeug.security import generate_password_hash
 from datetime import datetime, date, timedelta
 from sqlalchemy import text
 import random
+
+def random_id_card(birth):
+    area_code = random.choice(['500107', '110101', '320311', '440305', '370202'])
+    birth_str = birth.strftime('%Y%m%d')
+    seq = f"{random.randint(100, 999)}"
+    check = random.choice(list('0123456789X'))
+    return f"{area_code}{birth_str}{seq}{check}"
+
+def random_insurance_card(id_card):
+    area_code = random.choice(['11', '50', '32', '44', '37'])
+    id_tail = id_card[-7:-1]  # 身份证号倒数第7到倒数第2位
+    rand_part = f"{random.randint(1000, 9999)}"
+    return f"{area_code}{id_tail}{rand_part}"
 
 app = create_app()
 
@@ -55,14 +67,15 @@ with app.app_context():
     for i, name in enumerate(patient_names, 1):
         gender = '女' if i % 2 == 0 else '男'
         birth = date(1980 + i % 20, (i % 12) + 1, (i % 28) + 1)
-        id_card = f'500107{birth.year}{birth.month:02d}{birth.day:02d}{1000+i:04d}'
+        id_card = random_id_card(birth)
+        insurance_card = random_insurance_card(id_card)
         pat = Patient(
             name=name,
             gender=gender,
             birth_date=birth,
-            contact=f'13883373{100+i:03d}',
+            contact=f'13883373{random.randint(100,999)}',
             id_card=id_card,
-            insurance_card=f'06137{110+i}',
+            insurance_card=insurance_card,
             insurance_balance=random.randint(5000, 20000)
         )
         db.session.add(pat)
@@ -141,39 +154,6 @@ with app.app_context():
             db.session.flush()
             registrations.append(reg)
 
-<<<<<<< HEAD
-    # 7. 诊疗记录、用药、检查明细（部分挂号有）
-    for reg in registrations:
-        if reg.visit_status == '已就诊':
-            record = MedicalRecord(
-                registration_id=reg.registration_id,
-                visit_time=reg.reg_time,
-                chief_complaint=random.choice(['头痛', '咳嗽', '发热', '腹痛', '乏力']),
-                present_illness=random.choice(['症状反复', '偶有加重', '无明显诱因']),
-                past_history=random.choice(['无特殊病史', '高血压', '糖尿病']),
-                allergy_history=random.choice(['无', '青霉素过敏']),
-                physical_exam=random.choice(['体温正常', '血压正常', '心肺无异常']),
-                diagnosis=random.choice(['感冒', '胃炎', '支气管炎', '偏头痛']),
-                suggestion=random.choice(['多喝水', '按时服药', '复查'])
-            )
-            db.session.add(record)
-            db.session.flush()
-            # 用药明细
-            for _ in range(random.randint(1, 2)):
-                med = MedicationDetail(
-                    registration_id=reg.registration_id,
-                    drug_id=random.choice(drugs).drug_id
-                )
-                db.session.add(med)
-            # 检查明细
-            for _ in range(random.randint(1, 2)):
-                chk = CheckDetail(
-                    registration_id=reg.registration_id,
-                    item_id=random.choice(check_items).item_id,
-                    result=random.choice(['正常', '异常', '未完成'])
-                )
-                db.session.add(chk)
-=======
     # 创建诊疗记录
     medical_record = MedicalRecord(
         registration_id=registrations[0].registration_id,
@@ -231,7 +211,6 @@ with app.app_context():
     patient.insurance_balance -= (drugs[0].price * 0.8 + check_items[0].price * 0.8)
 
     registrations[0].visit_status = '已就诊'
->>>>>>> b54603b183947c42a2eec79cc3bc6a2416525cfb
 
     db.session.commit()
     print("数据库表已创建完成！")
