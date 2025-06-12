@@ -322,11 +322,11 @@ def list_departments():
     # 渲染选择科室的模板，并传递科室列表
     return render_template('select_department.html', departments=departments)
 ###2.2进入日历挂号后，选择医生，跳转至此
-@registration_bp.route('/schedules/<int:schedule_id>/create_appointment', methods=['GET', 'POST'])  # <--- 修改1: 允许 POST
+@registration_bp.route('/schedules/<int:schedule_id>/create_appointment', methods=['GET', 'POST'])
 @login_required
 def create_appointment_page(schedule_id):
     print('进入create_appointment_page')
-    schedule_item = db.session.get(Schedule, schedule_id)  # 使用 db.session.get 更好
+    schedule_item = db.session.get(Schedule, schedule_id)
     if not schedule_item:
         abort(404)
 
@@ -340,20 +340,16 @@ def create_appointment_page(schedule_id):
                               _scheme=current_app.config.get('PREFERRED_URL_SCHEME', 'http'))
         return redirect(profile_url)
 
-    # --- 修改2: 添加 POST 请求处理逻辑 ---
     if request.method == 'POST':
-        # 再次检查号源 (重要！因为从GET到POST之间可能有变化)
-        # 重新从数据库获取最新的 schedule_item 状态，以避免竞态条件
-        # 或者使用数据库锁，这里简化处理，直接用之前的 schedule_item，但最好重新获取
         refreshed_schedule_item = db.session.get(Schedule, schedule_id)
         if not refreshed_schedule_item or refreshed_schedule_item.remain_slots <= 0:
             flash('抱歉，您操作期间号源已无或排班信息有变，请重新选择。', 'warning')
-            return redirect(url_for('.department_schedule_calendar', department_name=schedule_item.doctor.department))
+            return redirect(
+                url_for('.department_schedule_calendar', department_name=schedule_item.doctor.department))
 
-        # 检查患者是否已在该时段预约了该医生
         existing_registration = Registration.query.filter(
             Registration.patient_id == current_patient.patient_id,
-            Registration.schedule_id == refreshed_schedule_item.schedule_id,  # 使用刷新后的
+            Registration.schedule_id == refreshed_schedule_item.schedule_id,
             Registration.visit_status != '已取消'
         ).first()
 
@@ -364,9 +360,28 @@ def create_appointment_page(schedule_id):
             return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
 
         try:
-            # 确保在事务中操作
+            # 获取挂号费
+            reg_fee = refreshed_schedule_item.reg_fee
+            # 假设医保报销比例为 80%
+            insurance_rate = 0.8
+            calculated_insurance_amount = round(reg_fee * insurance_rate, 2)
+            calculated_self_pay_amount = round(reg_fee - calculated_insurance_amount, 2)
+            total_payable_amount = calculated_insurance_amount + calculated_self_pay_amount
+
+            # --- 核心修改：在创建 Payment 记录之前检查余额并扣费 ---
+            if current_patient.insurance_balance < total_payable_amount:
+                # 余额不足，直接阻止挂号
+                flash(
+                    f'您的医保账户余额不足以支付挂号费（需 {total_payable_amount:.2f} 元），当前余额为 {current_patient.insurance_balance:.2f} 元。请充值或选择其他支付方式。',
+                    'danger')
+                db.session.rollback()  # 确保之前的任何操作都被回滚
+                return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
+
+            # 如果余额足够，则扣除余额
+            current_patient.insurance_balance -= total_payable_amount
+
             if refreshed_schedule_item.remain_slots > 0:
-                refreshed_schedule_item.remain_slots -= 1  # 更新刷新后的对象
+                refreshed_schedule_item.remain_slots -= 1
 
                 new_registration = Registration(
                     patient_id=current_patient.patient_id,
@@ -375,31 +390,45 @@ def create_appointment_page(schedule_id):
                     visit_status='待就诊',
                 )
                 db.session.add(new_registration)
-                # refreshed_schedule_item 是受 SQLAlchemy 管理的对象，其属性修改会被追踪
-                # db.session.add(refreshed_schedule_item) # 可以不显式 add，但为了清晰也可以加上
+                db.session.flush()  # 确保 new_registration.registration_id 在 Payment 创建前可用
+
+                # 创建 Payment 记录，状态直接为 '已支付'
+                new_payment = Payment(
+                    registration_id=new_registration.registration_id,
+                    fee_type='挂号费',
+                    insurance_amount=calculated_insurance_amount,
+                    self_pay_amount=calculated_self_pay_amount,
+                    pay_method='医保支付',  # 如果是医保余额扣除，直接设为医保支付
+                    pay_time=datetime.utcnow(),  # 记录支付时间
+                    pay_status='已支付'  # 直接设置为已支付
+                )
+                db.session.add(new_payment)
+
                 db.session.commit()
 
-                flash(
-                    f'恭喜您，成功为患者【{current_patient.name}】预约 {refreshed_schedule_item.doctor.name} 医生！详细信息如下：',
-                    'success')
 
-                # --- 这是 "第五步 B" 的核心修改 ---
-                return redirect(url_for('.registration_success_page', registration_id=new_registration.registration_id))
-                # --- 核心修改结束 ---
+
+
+
+                # 挂号成功且支付成功，重定向到挂号列表或成功详情页
+                return redirect(url_for('.registration_list'))
+                # 如果你想显示一个详细的成功页面，可以重定向到 registration_success_page
+                # return redirect(url_for('.registration_success_page', registration_id=new_registration.registration_id))
+
             else:
-                # 理论上在上面的 refreshed_schedule_item.remain_slots <= 0 已经捕获
-                db.session.rollback()  # 以防万一
+                db.session.rollback()
                 flash('非常抱歉，号源已被抢完，请重新选择。', 'danger')
                 return redirect(
-                    url_for('.department_schedule_calendar', department_name=refreshed_schedule_item.doctor.department))
+                    url_for('.department_schedule_calendar',
+                            department_name=refreshed_schedule_item.doctor.department))
 
         except Exception as e:
             db.session.rollback()
             current_app.logger.error(
-                f"创建挂号记录失败 for schedule_id {schedule_id}, patient_id {current_patient.patient_id}: {str(e)}")
+                f"创建挂号记录或支付失败 for schedule_id {schedule_id}, patient_id {current_patient.patient_id}: {str(e)}")
             flash('挂号失败，发生内部错误，请稍后再试。', 'danger')
             return redirect(url_for('.create_appointment_page', schedule_id=schedule_id))
-        # --- POST 请求处理结束 ---
+
 
     # --- 处理 GET 请求 (显示页面，与您之前的逻辑类似) ---
     if schedule_item.remain_slots <= 0:  # GET 时也检查一次
