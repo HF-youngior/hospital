@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -126,6 +125,7 @@
             </div>
         </div>
 
+        {% if user.role == 'patient' %}
         <div class="col-md-4 mb-4">
             <div class="card h-100 d-flex flex-column">
                 <div class="card-body">
@@ -137,7 +137,6 @@
                 </div>
             </div>
         </div>
-
         <div class="col-md-4 mb-4">
             <div class="card h-100 d-flex flex-column">
                 <div class="card-body">
@@ -151,6 +150,7 @@
                 </div>
             </div>
         </div>
+        {% endif %}
         {% endif %}
     </div>
 
