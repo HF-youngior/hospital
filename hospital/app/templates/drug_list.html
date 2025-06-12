@@ -53,7 +53,7 @@
         <tbody>
             {% for drug in drugs %}
             <tr>
-                <td>{{ drug.drug_id }}</td>
+                <td>国药准字H2024{{ "%04d"|format(drug.drug_id) }}</td>
                 <td>{{ drug.name }}</td>
                 <td>{{ drug.specification }}</td>
                 <td>{{ drug.price }} 元</td>
