@@ -90,99 +90,101 @@ def select_department_page():
 
     return render_template('select_department.html', departments=departments)
 
-
-@registration_bp.route('/make/<int:schedule_id>', methods=['GET', 'POST'])
-@login_required
-@role_required('patient', 'admin')
-def make_registration(schedule_id):
-    """
-    处理针对特定排班ID (schedule_id) 的挂号请求。
-    - GET 请求:
-        - 如果是患者用户，通常直接进入POST逻辑（因为患者是为自己挂号）。
-        - 如果是管理员用户，显示一个选择患者的界面，让管理员可以为系统内的任一患者挂号。
-    - POST 请求: 执行实际的挂号创建、费用计算、扣款等操作。
-    """
-    print('进入make_registration111111')
-    schedule = Schedule.query.get_or_404(schedule_id)
-    # 检查排班有效性
-    if schedule.remain_slots <= 0:
-        flash('对不起，该时段已无余号')
-        # return redirect(url_for('registration.available_schedules'))
-        return "功能开发中，暂时重定向到这里。"
-    if schedule.date < datetime.now().date():   # 比较日期，确保不是过去的排班
-        flash('对不起，该排班日期已过')
-        # return redirect(url_for('registration.available_schedules'))
-        return "功能开发中，暂时重定向到这里。"
-
-    patient_id = None
-
-    if current_user.role == 'patient':
-        if current_user.patient_id:
-            patient_id = current_user.patient_id
-        else:
-            flash('您的账号未关联患者信息，请先完善个人信息')
-            return redirect(url_for('patient.patient_profile'))
-    elif current_user.role == 'admin':
-        if request.method == 'POST':
-            # 管理员通过表单提交为指定患者挂号
-            patient_id = request.form.get('patient_id', type=int)
-        else:
-            patients = Patient.query.all()
-            return render_template('select_patient.html', patients=patients, schedule=schedule)
-
-    if patient_id:
-        # 检查患者是否已有“待就诊”状态的挂号
-        existing = Registration.query.filter_by(
-            patient_id=patient_id,
-            schedule_id=schedule_id,
-            visit_status='待就诊'
-        ).first()
-        if existing:
-            flash('您已经有一条待就诊的挂号，请勿重复预约')
-            # return redirect(url_for('registration.available_schedules'))
-            return "功能开发中，暂时重定向到这里。"
-
-        patient = Patient.query.get(patient_id)
-        reg_fee = schedule.reg_fee
-        insurance_rate = 0.8
-        insurance_amount = reg_fee * insurance_rate
-        self_pay_amount = reg_fee * (1 - insurance_rate)
-
-        if patient.insurance_balance < insurance_amount:
-            flash('医保余额不足以支付挂号费！')
-            # return redirect(url_for('registration.available_schedules'))
-            return "功能开发中，暂时重定向到这里。"
-
-        try:
-            registration = Registration(
-                patient_id=patient_id,
-                schedule_id=schedule_id,
-                reg_time=datetime.now(),
-                visit_status='待就诊'
-            )
-            schedule.remain_slots -= 1
-            patient.insurance_balance -= insurance_amount
-            print(f"Make Registration: Schedule ID: {schedule_id}, Remain Slots: {schedule.remain_slots}")
-
-            payment = Payment(
-                registration_id=registration.registration_id,
-                fee_type='挂号费',
-                insurance_amount=insurance_amount,
-                self_pay_amount=self_pay_amount,
-                pay_method='医保支付',
-                pay_time=datetime.now(),
-                pay_status='已支付'
-            )
-            db.session.add_all([registration, payment])
-            db.session.commit()
-            flash('挂号预约成功！')
-            return redirect(url_for('registration.registration_list'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'预约挂号失败：{str(e)}')
-            print(f"Error making registration: {str(e)}")
-    # return redirect(url_for('registration.available_schedules'))
-    return "功能开发中，暂时重定向到这里。"
+"""
+这个视图没什么用，注释掉了
+"""
+# @registration_bp.route('/make/<int:schedule_id>', methods=['GET', 'POST'])
+# @login_required
+# @role_required('patient', 'admin')
+# def make_registration(schedule_id):
+#     """
+#     处理针对特定排班ID (schedule_id) 的挂号请求。
+#     - GET 请求:
+#         - 如果是患者用户，通常直接进入POST逻辑（因为患者是为自己挂号）。
+#         - 如果是管理员用户，显示一个选择患者的界面，让管理员可以为系统内的任一患者挂号。
+#     - POST 请求: 执行实际的挂号创建、费用计算、扣款等操作。
+#     """
+#     print('进入make_registration111111')
+#     schedule = Schedule.query.get_or_404(schedule_id)
+#     # 检查排班有效性
+#     if schedule.remain_slots <= 0:
+#         flash('对不起，该时段已无余号')
+#         # return redirect(url_for('registration.available_schedules'))
+#         return "功能开发中，暂时重定向到这里。"
+#     if schedule.date < datetime.now().date():   # 比较日期，确保不是过去的排班
+#         flash('对不起，该排班日期已过')
+#         # return redirect(url_for('registration.available_schedules'))
+#         return "功能开发中，暂时重定向到这里。"
+#
+#     patient_id = None
+#
+#     if current_user.role == 'patient':
+#         if current_user.patient_id:
+#             patient_id = current_user.patient_id
+#         else:
+#             flash('您的账号未关联患者信息，请先完善个人信息')
+#             return redirect(url_for('patient.patient_profile'))
+#     elif current_user.role == 'admin':
+#         if request.method == 'POST':
+#             # 管理员通过表单提交为指定患者挂号
+#             patient_id = request.form.get('patient_id', type=int)
+#         else:
+#             patients = Patient.query.all()
+#             return render_template('select_patient.html', patients=patients, schedule=schedule)
+#
+#     if patient_id:
+#         # 检查患者是否已有“待就诊”状态的挂号
+#         existing = Registration.query.filter_by(
+#             patient_id=patient_id,
+#             schedule_id=schedule_id,
+#             visit_status='待就诊'
+#         ).first()
+#         if existing:
+#             flash('您已经有一条待就诊的挂号，请勿重复预约')
+#             # return redirect(url_for('registration.available_schedules'))
+#             return "功能开发中，暂时重定向到这里。"
+#
+#         patient = Patient.query.get(patient_id)
+#         reg_fee = schedule.reg_fee
+#         insurance_rate = 0.8
+#         insurance_amount = reg_fee * insurance_rate
+#         self_pay_amount = reg_fee * (1 - insurance_rate)
+#
+#         if patient.insurance_balance < insurance_amount:
+#             flash('医保余额不足以支付挂号费！')
+#             # return redirect(url_for('registration.available_schedules'))
+#             return "功能开发中，暂时重定向到这里。"
+#
+#         try:
+#             registration = Registration(
+#                 patient_id=patient_id,
+#                 schedule_id=schedule_id,
+#                 reg_time=datetime.now(),
+#                 visit_status='待就诊'
+#             )
+#             schedule.remain_slots -= 1
+#             patient.insurance_balance -= insurance_amount
+#             print(f"Make Registration: Schedule ID: {schedule_id}, Remain Slots: {schedule.remain_slots}")
+#
+#             payment = Payment(
+#                 registration_id=registration.registration_id,
+#                 fee_type='挂号费',
+#                 insurance_amount=insurance_amount,
+#                 self_pay_amount=self_pay_amount,
+#                 pay_method='医保支付',
+#                 pay_time=datetime.now(),
+#                 pay_status='已支付'
+#             )
+#             db.session.add_all([registration, payment])
+#             db.session.commit()
+#             flash('挂号预约成功！')
+#             return redirect(url_for('registration.registration_list'))
+#         except Exception as e:
+#             db.session.rollback()
+#             flash(f'预约挂号失败：{str(e)}')
+#             print(f"Error making registration: {str(e)}")
+#     # return redirect(url_for('registration.available_schedules'))
+#     return "功能开发中，暂时重定向到这里。"
 
 
 ##新加入
@@ -219,7 +221,7 @@ def department_schedule_calendar(department_name):
     显示指定科室未来几天的聚合排班日历表。
     """
     # 1. 验证 department_name
-    # 由于 Schedule 表中没有 department 字段，我们需要通过 Doctor 表来找到属于该科室的医生，
+    # 由于      表中没有 department 字段，我们需要通过 Doctor 表来找到属于该科室的医生，
     # 然后再用这些医生的 ID 去查询 Schedule 表。
 
     # 找到该科室下的所有医生 ID

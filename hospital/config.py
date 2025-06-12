@@ -11,8 +11,8 @@ class Config:
     DB_NAME = 'hospitalDB'
 
     # 强烈建议从环境变量获取用户名和密码，而不是硬编码
-    DB_USER = 'sa'  # 替换为你的SQL Server登录名
-    DB_PASSWORD_RAW = 'hhxxttxszec518'  # 替换为你的SQL Server密码
+    DB_USER = 'smgf'  # 替换为你的SQL Server登录名
+    DB_PASSWORD_RAW = 'smgf'  # 替换为你的SQL Server密码
 
     ODBC_DRIVER = 'ODBC Driver 17 for SQL Server'
 

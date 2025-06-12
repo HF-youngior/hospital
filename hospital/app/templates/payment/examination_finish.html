@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>检查支付成功</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #e6f7ff; color: #005c99; }
+        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { margin-bottom: 20px; }
+        p { font-size: 1.2em; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ 检查项目支付成功！</h1>
+        <p>您的检查订单 <strong>{{ order_id }}</strong> 已成功支付。</p>
+        <p>请前往相应科室进行检查。</p>
+        <p><a href="{{ url_for('index') }}">返回首页</a></p>
+    </div>
+</body>
+</html>

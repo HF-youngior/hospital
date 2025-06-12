@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -38,7 +37,11 @@
                 <th>价格</th>
                 <th>用法</th>
                 <th>频率</th>
+                <!-- ========== 核心修改点 1 ========== -->
+                <!-- 只有管理员或医生能看到库存表头 -->
+                {% if current_user.role in ['admin', 'doctor'] %}
                 <th>库存</th>
+                {% endif %}
                 <th>备注</th>
                 <th>状态</th>
                 <th>医保比例</th>
@@ -56,7 +59,11 @@
                 <td>{{ drug.price }} 元</td>
                 <td>{{ drug.usage }}</td>
                 <td>{{ drug.frequency }}</td>
+                <!-- ========== 核心修改点 2 ========== -->
+                <!-- 只有管理员或医生能看到库存数据 -->
+                {% if current_user.role in ['admin', 'doctor'] %}
                 <td>{{ drug.stock }}</td>
+                {% endif %}
                 <td>{{ drug.remark or '无' }}</td>
                 <td>{{ drug.status }}</td>
                 <td>{{ (drug.insurance_rate * 100)|round(0) }}%</td>
@@ -67,8 +74,17 @@
                 {% endif %}
             </tr>
             {% else %}
+            <!-- ========== 核心修改点 3 ========== -->
+            <!-- 动态计算 colspan 以保证表格布局正确 -->
+            {% set col_count = 9 %}  <!-- 患者看到的基础列数 -->
+            {% if current_user.role in ['admin', 'doctor'] %}
+                {% set col_count = col_count + 1 %} <!-- 为库存列+1 -->
+            {% endif %}
+            {% if current_user.role == 'admin' %}
+                {% set col_count = col_count + 1 %} <!-- 为操作列+1 -->
+            {% endif %}
             <tr>
-                <td colspan="{% if current_user.role == 'admin' %}11{% else %}10{% endif %}">暂无药品记录。</td>
+                <td colspan="{{ col_count }}">暂无药品记录。</td>
             </tr>
             {% endfor %}
         </tbody>

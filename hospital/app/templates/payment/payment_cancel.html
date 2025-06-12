@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>支付已取消</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; padding-top: 50px; background-color: #ffe6e6; color: #b30000; }
+        .container { background-color: #fff; padding: 30px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); display: inline-block; }
+        h1 { margin-bottom: 20px; }
+        p { font-size: 1.2em; }
+        a { color: #007bff; text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ 支付已取消</h1>
+        <p>订单 <strong>{{ order_id }}</strong> 的支付已被取消。</p>
+        <p>您可以 <a href="{{ url_for('initiate_payment', type=payment_type, order_id=order_id, amount=amount_to_repay) }}">重新支付</a> 或 <a href="{{ url_for('index') }}">返回首页</a>。</p>
+    </div>
+</body>
+</html>
