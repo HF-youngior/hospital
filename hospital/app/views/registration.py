@@ -133,7 +133,7 @@ def select_department_page():
 #             return render_template('select_patient.html', patients=patients, schedule=schedule)
 #
 #     if patient_id:
-#         # 检查患者是否已有“待就诊”状态的挂号
+#         # 检查患者是否已有"待就诊"状态的挂号
 #         existing = Registration.query.filter_by(
 #             patient_id=patient_id,
 #             schedule_id=schedule_id,
@@ -529,31 +529,28 @@ def cancel_registration(registration_id):
 #看支付情况
 @registration_bp.route('/medicalrecord/<int:registration_id>', endpoint='registration_view_medical_record')
 @login_required
-@role_required('patient')
 def view_medical_record(registration_id):
-    # 获取挂号记录，确保存在并属于当前病人
     registration = Registration.query.get_or_404(registration_id)
-    if registration.patient_id != current_user.patient_id:
+    # 只有患者本人或管理员可以查看
+    if current_user.role == 'patient':
+        if registration.patient_id != current_user.patient_id:
+            flash('您无权查看此记录')
+            return redirect(url_for('registration.registration_list'))
+    elif current_user.role != 'admin':
         flash('您无权查看此记录')
         return redirect(url_for('registration.registration_list'))
 
-    # 获取诊疗记录 (可能为空，如果没有完成就诊)
     medical_record = MedicalRecord.query.filter_by(registration_id=registration_id).first()
-
-    # 获取用药明细和检查明细
     medications = MedicationDetail.query.filter_by(registration_id=registration_id).all()
     checks = CheckDetail.query.filter_by(registration_id=registration_id).all()
-
-    # 获取该挂号下的所有支付记录
     payments = Payment.query.filter_by(registration_id=registration_id).all()
 
-    # 将所有需要的数据传递给模板
     return render_template('medical_record_view.html',
-                           registration=registration, # 传递 registration 对象
-                           medical_record=medical_record, # 传递 medical_record 对象 (注意模板中可能依然用 record 命名)
-                           medications=medications,     # 传递药品明细列表
-                           checks=checks,               # 传递检查明细列表
-                           payments=payments)           # 传递支付记录列表
+                           registration=registration,
+                           medical_record=medical_record,
+                           medications=medications,
+                           checks=checks,
+                           payments=payments)
 
 
 @registration_bp.route('/pay_details')
