@@ -100,48 +100,10 @@
         </div>
     </div>
 
-    <!-- 支付记录 -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>支付记录</h5>
-        </div>
-        <div class="card-body">
-            {% if payments %}
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>费用类型</th>
-                        <th>医保金额</th>
-                        <th>自付金额</th>
-                        <th>支付方式</th>
-                        <th>支付时间</th>
-                        <th>状态</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for payment in payments %}
-                    <tr>
-                        <td>{{ payment.fee_type }}</td>
-                        <td>{{ payment.insurance_amount }} 元</td>
-                        <td>{{ payment.self_pay_amount }} 元</td>
-                        <td>{{ payment.pay_method }}</td>
-                        <td>{{ payment.pay_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                        <td>{{ payment.pay_status }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% else %}
-            <p>无支付记录。</p>
-            {% endif %}
-        </div>
-    </div>
-
     <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary">返回个人中心</a>
     <a href="{{ url_for('invoice.generate', registration_id=registration.registration_id) }}" class="btn btn-success">
         生成电子发票
     </a>
-    <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary mt-3">返回</a>
 </div>
 </body>
 </html>
