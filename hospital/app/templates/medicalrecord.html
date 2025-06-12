@@ -13,57 +13,74 @@
 <div class="container py-5">
     <h1>病历管理</h1>
 
+    <!-- 查询表单 -->
+    <form method="get" class="row g-3 align-items-end mb-4">
+        <div class="col-md-4">
+            <label class="form-label">患者姓名或ID</label>
+            <input type="text" class="form-control" name="search_patient" placeholder="输入姓名或ID" value="{{ request.args.get('search_patient', '') }}">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">就诊日期</label>
+            <input type="date" class="form-control" name="search_date" value="{{ request.args.get('search_date', '') }}">
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-primary" type="submit">查询</button>
+        </div>
+    </form>
+
     <!-- 挂号列表 -->
     {% if not patient_id %}
     <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">今日挂号病人列表</h5>
+                <div class="card-body">
+                    <h5 class="card-title">今日挂号病人列表</h5>
             <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>挂号ID</th>
-                        <th>患者ID</th>
-                        <th>患者姓名</th>
-                        <th>科室</th>
-                        <th>时间段</th>
-                        <th>状态</th>
-                        <th>操作</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for reg in registrations %}
-                    <tr>
-                        <td>{{ reg.registration_id }}</td>
+                        <thead>
+                            <tr>
+                                <th>挂号ID</th>
+                                <th>患者ID</th>
+                                <th>患者姓名</th>
+                                <th>科室</th>
+                                <th>时间段</th>
+                                <th>状态</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reg in registrations %}
+                            <tr>
+                                <td>{{ reg.registration_id }}</td>
                         <td>P25{{ "%02d"|format((reg.patient_id - 1) % 12 + 1) }}-{{ "%04d"|format(reg.patient_id) }}</td>
-                        <td>{{ reg.patient.name }}</td>
-                        <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
-                        <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
-                        <td>{{ reg.visit_status }}</td>
-                        <td>
-                            {% if reg.visit_status == '待就诊' %}
-                            <a href="{{ url_for('medicalrecord.consult', registration_id=reg.registration_id) }}" class="btn btn-primary btn-sm">看诊</a>
-                            {% else %}
-                            已完成
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            {% if not registrations %}
+                                <td>{{ reg.patient.name }}</td>
+                                <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
+                                <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
+                                <td>{{ reg.visit_status }}</td>
+                                <td>
+                                    {% if current_user.role == 'admin' %}
+                                        <a href="{{ url_for('registration.registration_view_medical_record', registration_id=reg.registration_id) }}" class="btn btn-info btn-sm">查看</a>
+                                    {% elif reg.visit_status == '待就诊' and current_user.role == 'doctor' %}
+                                        <a href="{{ url_for('medicalrecord.consult', registration_id=reg.registration_id) }}" class="btn btn-primary btn-sm">看诊</a>
+                                    {% else %}
+                                        已完成
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    {% if not registrations %}
             <p>今日暂无挂号病人。</p>
-            {% endif %}
+                    {% endif %}
         </div>
     </div>
     {% endif %}
 
     <!-- 诊疗记录表单 -->
-    {% if patient_id %}
+{% if patient_id %}
     <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">新建诊疗记录</h5>
+                <div class="card-body">
+                    <h5 class="card-title">新建诊疗记录</h5>
             <form id="medical-record-form" method="POST" action="{{ url_for('medicalrecord.save') }}">
-                <input type="hidden" name="registration_id" value="{{ registration_id }}">
+                        <input type="hidden" name="registration_id" value="{{ registration_id }}">
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="form-label">患者ID</label>
@@ -117,7 +134,7 @@
                                 <select class="form-select" id="drug-search-type">
                                     <option value="name">按名称</option>
                                     <option value="id">按ID</option>
-                                </select>
+                                                </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">搜索关键词</label>
@@ -125,8 +142,8 @@
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-primary w-100 mt-4" id="drug-search-button">搜索</button>
-                            </div>
-                        </div>
+                                            </div>
+                                        </div>
                         <div id="drug-search-results">
                             <table class="table table-striped">
                                 <thead>
@@ -155,8 +172,8 @@
                                             {% if drug.stock > 0 %}
                                             <button type="button" class="btn btn-success btn-sm add-drug" data-id="{{ drug.drug_id }}">添加</button>
                                             {% endif %}
-                                        </td>
-                                    </tr>
+                                    </td>
+                                </tr>
                                     {% endfor %}
                                 </tbody>
                             </table>
@@ -175,7 +192,7 @@
                                     <button type="button" class="btn btn-warning btn-sm adjust-quantity" data-action="decrease">-</button>
                                     <button type="button" class="btn btn-danger btn-sm float-end remove-drug">移除</button>
                                 </li>
-                                {% endfor %}
+                                                    {% endfor %}
                             </ul>
                         </div>
                     </div>
@@ -191,7 +208,7 @@
                                 <select class="form-select" id="check-search-type">
                                     <option value="name">按名称</option>
                                     <option value="id">按ID</option>
-                                </select>
+                                                </select>
                             </div>
                             <div class="col-md-4">
                                 <label class="form-label">搜索关键词</label>
@@ -199,8 +216,8 @@
                             </div>
                             <div class="col-md-4">
                                 <button type="button" class="btn btn-primary w-100 mt-4" id="check-search-button">搜索</button>
-                            </div>
-                        </div>
+                                            </div>
+                                        </div>
                         <div id="check-search-results">
                             <table class="table table-striped">
                                 <thead>
@@ -216,14 +233,14 @@
                                     <tr>
                                         <td>
                                             <input type="checkbox" class="check-item" data-id="{{ item.item_id }}" {% if item.item_id in selected_checks|map(attribute='item_id')|list %}checked{% endif %}>
-                                        </td>
+                                    </td>
                                         <td>{{ item.name }}</td>
                                         <td>{{ item.department }}</td>
                                         <td>{{ item.price }} 元</td>
-                                    </tr>
+                                </tr>
                                     {% endfor %}
-                                </tbody>
-                            </table>
+                            </tbody>
+                        </table>
                         </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="no-check" name="no_check">
@@ -247,20 +264,20 @@
                     <div class="col-12">
                         <button type="submit" class="btn btn-primary" id="save-record">保存</button>
                         <a href="{{ url_for('medicalrecord.medicalrecord_list') }}" class="btn btn-secondary">返回</a>
-                    </div>
                 </div>
+            </div>
             </form>
         </div>
     </div>
-    {% endif %}
+{% endif %}
 
     <!-- 诊疗记录详情 -->
-    {% if record %}
-    <div class="card mt-4">
-        <div class="card-body">
-            <h5 class="card-title">患者ID: {{ record.registration.patient_id }}</h5>
+{% if record %}
+<div class="card mt-4">
+    <div class="card-body">
+        <h5 class="card-title">患者ID: {{ record.registration.patient_id }}</h5>
             <table class="table">
-                <tbody>
+            <tbody>
                     <tr><th>挂号ID</th><td>{{ record.registration_id }}</td></tr>
                     <tr><th>主诉记录</th><td>{{ record.chief_complaint }}</td></tr>
                     <tr><th>现病记录</th><td>{{ record.present_illness }}</td></tr>
@@ -269,91 +286,93 @@
                     <tr><th>体格检查</th><td>{{ record.physical_exam }}</td></tr>
                     <tr><th>诊断结论</th><td>{{ record.diagnosis }}</td></tr>
                     <tr><th>建议</th><td>{{ record.suggestion }}</td></tr>
-                </tbody>
-            </table>
+            </tbody>
+        </table>
 
             <h6>用药明细</h6>
             <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>药品名称</th>
-                        <th>价格</th>
+            <thead>
+                <tr>
+                    <th>药品名称</th>
+                    <th>价格</th>
                         <th>数量</th>
-                        <th>医保报销比例</th>
+                    <th>医保报销比例</th>
                         <th>用法</th>
                         <th>频次</th>
-                        <th>状态</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if record.medication_details %}
-                        {% for detail in record.medication_details %}
-                        <tr>
-                            <td>{{ detail.drug.name if detail.drug else 'N/A' }}</td>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if record.medication_details %}
+                    {% for detail in record.medication_details %}
+                    <tr>
+                        <td>{{ detail.drug.name if detail.drug else 'N/A' }}</td>
                             <td>{{ "%.2f"|format(detail.drug.price) if detail.drug else 'N/A' }} 元</td>
                             <td>{{ detail.quantity }}</td>
-                            <td>{{ "%.2f"|format(detail.drug.insurance_rate * 100) if detail.drug else 'N/A' }}%</td>
-                            <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>
-                            <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td>
-                            <td>
-                                {% set payment_status_found = '未知' %}
-                                {% if detail.registration and detail.registration.payments %}
-                                    {% for payment in detail.registration.payments %}
-                                        {% if payment.fee_type == '药品费' %}
-                                            {% set payment_status_found = payment.pay_status %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                {{ payment_status_found }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
+                        <td>{{ "%.2f"|format(detail.drug.insurance_rate * 100) if detail.drug else 'N/A' }}%</td>
+                        <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>
+                        <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td>
+                        <td>
+                            {% set payment_status_found = '未知' %}
+                            {% if detail.registration and detail.registration.payments %}
+                                {% for payment in detail.registration.payments %}
+                                    {% if payment.fee_type == '药品费' %}
+                                        {% set payment_status_found = payment.pay_status %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {{ payment_status_found }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
                         <tr><td colspan="7">暂无用药明细。</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                {% endif %}
+            </tbody>
+        </table>
 
             <h6>检查明细</h6>
             <table class="table table-striped">
-                <thead>
+            <thead>
+                <tr>
+                    <th>检查项目</th>
+                    <th>价格</th>
+                    <th>医保报销比例</th>
+                    <th>状态</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% if record.check_details %}
+                    {% for detail in record.check_details %}
                     <tr>
-                        <th>检查项目</th>
-                        <th>价格</th>
-                        <th>医保报销比例</th>
-                        <th>状态</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% if record.check_details %}
-                        {% for detail in record.check_details %}
-                        <tr>
-                            <td>{{ detail.check_item.name if detail.check_item else 'N/A' }}</td>
+                        <td>{{ detail.check_item.name if detail.check_item else 'N/A' }}</td>
                             <td>{{ "%.2f"|format(detail.check_item.price) if detail.check_item else 'N/A' }} 元</td>
-                            <td>{{ "%.2f"|format(detail.check_item.insurance_rate * 100) if detail.check_item else 'N/A' }}%</td>
-                            <td>
-                                {% set payment_status_found = '未知' %}
-                                {% if detail.registration and detail.registration.payments %}
-                                    {% for payment in detail.registration.payments %}
-                                        {% if payment.fee_type == '检查费' %}
-                                            {% set payment_status_found = payment.pay_status %}
-                                        {% endif %}
-                                    {% endfor %}
-                                {% endif %}
-                                {{ payment_status_found }}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="4">暂无检查明细。</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
+                        <td>{{ "%.2f"|format(detail.check_item.insurance_rate * 100) if detail.check_item else 'N/A' }}%</td>
+                        <td>
+                            {% set payment_status_found = '未知' %}
+                            {% if detail.registration and detail.registration.payments %}
+                                {% for payment in detail.registration.payments %}
+                                    {% if payment.fee_type == '检查费' %}
+                                        {% set payment_status_found = payment.pay_status %}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                            {{ payment_status_found }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr><td colspan="4">暂无检查明细。</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
         </div>
     </div>
     {% endif %}
 </div>
-<a href="{{ url_for('main.index') }}" class="btn btn-secondary">返回主页</a>
+    <!-- container结束前，表格下方 -->
+    <a href="{{ url_for('main.index') }}" class="btn btn-secondary mt-4">返回主页</a>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>

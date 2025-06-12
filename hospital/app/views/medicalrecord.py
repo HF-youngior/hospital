@@ -6,6 +6,7 @@ from datetime import datetime, date
 from sqlalchemy.exc import SQLAlchemyError
 from app.views.inventory import SearchForm
 import logging
+from sqlalchemy import and_
 
 # 设置日志
 logging.basicConfig(level=logging.DEBUG)
@@ -17,6 +18,7 @@ medicalrecord = Blueprint('medicalrecord', __name__)
 @login_required
 def list():
     search_patient = request.args.get('search_patient', '').strip()
+    search_date = request.args.get('search_date', '').strip()
     if current_user.role == 'doctor' and current_user.doctor:
         schedules = current_user.doctor.schedules.filter(
             Schedule.date == date.today()
@@ -31,15 +33,17 @@ def list():
     else:
         registrations = Registration.query.filter(False)  # 空结果
 
-    # 支持按患者姓名或ID模糊查询
+    # 支持按患者姓名/ID和日期联合查询
     if search_patient:
         if search_patient.isdigit():
             registrations = registrations.filter(Registration.patient_id == int(search_patient))
         else:
             from app.models import Patient
             registrations = registrations.join(Patient).filter(Patient.name.contains(search_patient))
+    if search_date:
+        registrations = registrations.join(Schedule).filter(Schedule.date == search_date)
     registrations = registrations.all()
-    return render_template('medicalrecord.html', registrations=registrations, search_patient=search_patient)
+    return render_template('medicalrecord.html', registrations=registrations, search_patient=search_patient, search_date=search_date)
 
 @medicalrecord.route('/medicalrecord/consult/<int:registration_id>', methods=['GET', 'POST'])
 @role_required('doctor')
