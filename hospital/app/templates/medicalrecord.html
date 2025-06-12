@@ -39,7 +39,6 @@
                                 <th>挂号ID</th>
                                 <th>患者ID</th>
                                 <th>患者姓名</th>
-                                <th>科室</th>
                                 <th>时间段</th>
                                 <th>状态</th>
                                 <th>操作</th>
@@ -51,7 +50,6 @@
                                 <td>{{ reg.registration_id }}</td>
                         <td>P25{{ "%02d"|format((reg.patient_id - 1) % 12 + 1) }}-{{ "%04d"|format(reg.patient_id) }}</td>
                                 <td>{{ reg.patient.name }}</td>
-                                <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
                                 <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
                                 <td>{{ reg.visit_status }}</td>
                                 <td>

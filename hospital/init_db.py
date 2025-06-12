@@ -140,7 +140,59 @@ with app.app_context():
     # 6. 挂号（每个患者2-3次，状态多样）
     registrations = []
     reg_statuses = ['待就诊', '已就诊', '已取消']
-    for i, pat in enumerate(patient_users):
+    
+    # 为patient1创建两条合理的诊疗记录
+    patient1 = patient_users[0]  # 获取patient1的用户信息
+    today = date.today()
+    
+    # 第一条诊疗记录 - 一周前
+    sch1 = Schedule(
+        doctor_id=doctor_users[0].doctor.doctor_id,
+        date=today - timedelta(days=7),
+        time_slot='上午',
+        room_address=f"{doctor_users[0].doctor.department}诊室101",
+        reg_fee=40.0,
+        total_slots=10,
+        remain_slots=10
+    )
+    db.session.add(sch1)
+    db.session.flush()
+    
+    reg1 = Registration(
+        patient_id=patient1.patient_id,
+        schedule_id=sch1.schedule_id,
+        reg_time=datetime.now() - timedelta(days=7),
+        visit_status='已就诊'
+    )
+    db.session.add(reg1)
+    db.session.flush()
+    registrations.append(reg1)
+    
+    # 第二条诊疗记录 - 三天前
+    sch2 = Schedule(
+        doctor_id=doctor_users[1].doctor.doctor_id,
+        date=today - timedelta(days=3),
+        time_slot='下午',
+        room_address=f"{doctor_users[1].doctor.department}诊室102",
+        reg_fee=42.0,
+        total_slots=10,
+        remain_slots=10
+    )
+    db.session.add(sch2)
+    db.session.flush()
+    
+    reg2 = Registration(
+        patient_id=patient1.patient_id,
+        schedule_id=sch2.schedule_id,
+        reg_time=datetime.now() - timedelta(days=3),
+        visit_status='已就诊'
+    )
+    db.session.add(reg2)
+    db.session.flush()
+    registrations.append(reg2)
+    
+    # 为其他患者创建挂号记录
+    for i, pat in enumerate(patient_users[1:], 1):
         for j in range(random.randint(2, 3)):
             sch = random.choice(schedules)
             status = random.choices(reg_statuses, weights=[0.5, 0.4, 0.1])[0]
@@ -153,14 +205,11 @@ with app.app_context():
             db.session.add(reg)
             db.session.flush()
             registrations.append(reg)
-           
 
-
-
-    # 创建诊疗记录
-    medical_record = MedicalRecord(
-        registration_id=registrations[0].registration_id,
-        visit_time=datetime.now(),
+    # 为patient1创建第一条诊疗记录的病历
+    medical_record1 = MedicalRecord(
+        registration_id=reg1.registration_id,
+        visit_time=datetime.now() - timedelta(days=7),
         chief_complaint='头痛一周',
         present_illness='间断性头痛，无明显诱因',
         past_history='无特殊病史',
@@ -169,52 +218,104 @@ with app.app_context():
         diagnosis='偏头痛',
         suggestion='服用阿司匹林，观察病情'
     )
-    db.session.add(medical_record)
+    db.session.add(medical_record1)
     db.session.flush()
 
-    # 创建用药和检查明细
-    medication_detail = MedicationDetail(
-        registration_id=registrations[0].registration_id,
-        drug_id=drugs[0].drug_id,
-        quantity=1  # 新增字段
+    # 为patient1创建第二条诊疗记录的病历
+    medical_record2 = MedicalRecord(
+        registration_id=reg2.registration_id,
+        visit_time=datetime.now() - timedelta(days=3),
+        chief_complaint='咳嗽、发热3天',
+        present_illness='3天前开始咳嗽，伴有发热，最高体温38.5℃',
+        past_history='无特殊病史',
+        allergy_history='无',
+        physical_exam='咽部充血，双肺呼吸音粗',
+        diagnosis='上呼吸道感染',
+        suggestion='服用头孢克洛，多喝水，注意休息'
     )
-    check_detail = CheckDetail(
-        registration_id=registrations[0].registration_id,
-        item_id=check_items[0].item_id,
-        result='未完成',
-        quantity=1  # 新增字段
-    )
-    db.session.add_all([medication_detail, check_detail])
+    db.session.add(medical_record2)
     db.session.flush()
 
-    # 创建药品和检查支付记录
-    patient = Patient.query.get(registrations[0].patient_id)
-    drug_payment = Payment(
-        registration_id=registrations[0].registration_id,
+    # 为patient1第一条诊疗记录创建用药和检查明细
+    medication_detail1 = MedicationDetail(
+        registration_id=reg1.registration_id,
+        drug_id=drugs[0].drug_id,  # 阿司匹林
+        quantity=1
+    )
+    check_detail1 = CheckDetail(
+        registration_id=reg1.registration_id,
+        item_id=check_items[0].item_id,  # 血常规
+        result='正常',
+        quantity=1
+    )
+    db.session.add_all([medication_detail1, check_detail1])
+    db.session.flush()
+
+    # 为patient1第二条诊疗记录创建用药和检查明细
+    medication_detail2 = MedicationDetail(
+        registration_id=reg2.registration_id,
+        drug_id=drugs[1].drug_id,  # 头孢克洛
+        quantity=2
+    )
+    check_detail2 = CheckDetail(
+        registration_id=reg2.registration_id,
+        item_id=check_items[2].item_id,  # 心电图
+        result='正常',
+        quantity=1
+    )
+    db.session.add_all([medication_detail2, check_detail2])
+    db.session.flush()
+
+    # 为patient1创建支付记录
+    patient = Patient.query.get(patient1.patient_id)
+    
+    # 第一条诊疗记录的支付
+    drug_payment1 = Payment(
+        registration_id=reg1.registration_id,
         fee_type='药品费',
         insurance_amount=drugs[0].price * 0.8,
         self_pay_amount=drugs[0].price * 0.2,
         pay_method='医保支付',
-        pay_time=datetime.now(),
+        pay_time=datetime.now() - timedelta(days=7),
         pay_status='已支付'
     )
-    db.session.add(drug_payment)
-
-    check_payment = Payment(
-        registration_id=registrations[0].registration_id,
+    check_payment1 = Payment(
+        registration_id=reg1.registration_id,
         fee_type='检查费',
         insurance_amount=check_items[0].price * 0.8,
         self_pay_amount=check_items[0].price * 0.2,
         pay_method='医保支付',
-        pay_time=datetime.now(),
+        pay_time=datetime.now() - timedelta(days=7),
         pay_status='已支付'
     )
-    db.session.add(check_payment)
-
-    patient.insurance_balance -= (drugs[0].price * 0.8 + check_items[0].price * 0.8)
-
-    registrations[0].visit_status = '已就诊'
-
+    
+    # 第二条诊疗记录的支付
+    drug_payment2 = Payment(
+        registration_id=reg2.registration_id,
+        fee_type='药品费',
+        insurance_amount=drugs[1].price * 0.8 * 2,  # 数量为2
+        self_pay_amount=drugs[1].price * 0.2 * 2,
+        pay_method='医保支付',
+        pay_time=datetime.now() - timedelta(days=3),
+        pay_status='已支付'
+    )
+    check_payment2 = Payment(
+        registration_id=reg2.registration_id,
+        fee_type='检查费',
+        insurance_amount=check_items[2].price * 0.8,
+        self_pay_amount=check_items[2].price * 0.2,
+        pay_method='医保支付',
+        pay_time=datetime.now() - timedelta(days=3),
+        pay_status='已支付'
+    )
+    
+    db.session.add_all([drug_payment1, check_payment1, drug_payment2, check_payment2])
+    
+    # 更新患者医保余额
+    patient.insurance_balance -= (
+        drugs[0].price * 0.8 + check_items[0].price * 0.8 +  # 第一次诊疗
+        drugs[1].price * 0.8 * 2 + check_items[2].price * 0.8  # 第二次诊疗
+    )
 
     db.session.commit()
     print("数据库表已创建完成！")
