@@ -58,26 +58,27 @@
         </thead>
         <tbody>
         {% for schedule in schedules %}
-            <tr>
-                <td>{{ schedule.schedule_id }}</td>
-                <td>{{ schedule.doctor.name }}</td>
-                <td>{{ schedule.doctor.department }}</td>
-                <td>{{ schedule.date.strftime('%Y-%m-%d') }}</td>
-                <td>{{ schedule.time_slot }}</td>
-                <td>{{ schedule.room_address }}</td>
-                <td>{{ schedule.reg_fee }} 元</td>
-                <td>{{ schedule.total_slots }}</td>
-                {% if current_user.role == 'admin' %}
-                <td>
-                    <a href="{{ url_for('schedule.edit_schedule', schedule_id=schedule.schedule_id) }}" class="btn btn-primary btn-sm">编辑</a>
-                    <form action="{{ url_for('schedule.delete_schedule', schedule_id=schedule.schedule_id) }}" method="post" style="display:inline;" onsubmit="return confirm('确定要删除该排班吗？');">
-                        <button type="submit" class="btn btn-danger btn-sm">删除</button>
-                    </form>
-                </td>
-                {% endif %}
-            </tr>
-        {% endfor %}
-        </tbody>
+        <tr>
+            <td>{{ schedule.schedule_id }}</td>
+            <td>{{ schedule.doctor.name }}</td>
+            <td>{{ schedule.doctor.department }}</td>
+            <td>{{ schedule.date.strftime('%Y-%m-%d') }}</td>
+            <td>{{ schedule.time_slot }}</td>
+            <td>{{ schedule.room_address }}</td>
+            <td>{{ schedule.reg_fee }} 元</td>
+            <td>{{ schedule.total_slots }}</td>
+            <td>{{ schedule.remain_slots }}</td>
+            {% if current_user.role == 'admin' %}
+            <td>
+                <a href="{{ url_for('schedule.edit_schedule', schedule_id=schedule.schedule_id) }}" class="btn btn-primary btn-sm">编辑</a>
+                <form action="{{ url_for('schedule.delete_schedule', schedule_id=schedule.schedule_id) }}" method="post" style="display:inline;" onsubmit="return confirm('确定要删除该排班吗？');">
+                    <button type="submit" class="btn btn-danger btn-sm">删除</button>
+                </form>
+            </td>
+            {% endif %}
+        </tr>
+    {% endfor %}
+    </tbody>
     </table>
 
     {% if not schedules %}
