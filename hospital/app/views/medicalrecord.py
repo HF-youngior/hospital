@@ -9,9 +9,9 @@ medicalrecord = Blueprint('medicalrecord', __name__)
 
 
 @medicalrecord.route('/medicalrecord', endpoint='medicalrecord_list')
-@role_required('doctor')
 @login_required
 def list():
+    search_patient = request.args.get('search_patient', '').strip()
     if current_user.role == 'doctor' and current_user.doctor:
         # 获取当前医生的排班
         schedules = current_user.doctor.schedules.filter(
@@ -21,13 +21,22 @@ def list():
         # 获取今天的挂号记录（包括待就诊和已就诊）
         registrations = Registration.query.filter(
             Registration.schedule_id.in_([s.schedule_id for s in schedules])
-        ).all()
-        print(f"Today's Registrations: {len(registrations)}")
+        )
+    elif current_user.role == 'admin':
+        # 管理员可查看所有挂号记录
+        registrations = Registration.query
     else:
-        registrations = []
-        print("No registrations found for this doctor.")
+        registrations = Registration.query.filter(False)  # 空结果
 
-    return render_template('medicalrecord.html', registrations=registrations)
+    # 支持按患者姓名或ID模糊查询
+    if search_patient:
+        if search_patient.isdigit():
+            registrations = registrations.filter(Registration.patient_id == int(search_patient))
+        else:
+            from app.models import Patient
+            registrations = registrations.join(Patient).filter(Patient.name.contains(search_patient))
+    registrations = registrations.all()
+    return render_template('medicalrecord.html', registrations=registrations, search_patient=search_patient)
 
 
 @medicalrecord.route('/medicalrecord/consult/<int:registration_id>', methods=['GET'])
@@ -187,7 +196,7 @@ def save():
             )
             db.session.add(payment_check)
 
-        # 更新挂号状态为“已就诊”
+        # 更新挂号状态为"已就诊"
         registration.visit_status = '已就诊'
         db.session.add(registration) # 确保 registration 对象的更新也被添加到会话
 

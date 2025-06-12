@@ -49,6 +49,12 @@
     <h2>病历管理</h2>
 
     {% if not patient_id %}
+    <form method="get" class="mb-3">
+        <div class="input-group" style="max-width: 400px;">
+            <input type="text" class="form-control" name="search_patient" placeholder="按患者姓名或ID查询" value="{{ search_patient|default('') }}">
+            <button class="btn btn-primary" type="submit">查询</button>
+        </div>
+    </form>
     <div class="row mt-4">
         <div class="col-md-12">
             <div class="card">
@@ -76,8 +82,10 @@
                                 <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
                                 <td>{{ reg.visit_status }}</td>
                                 <td>
-                                    {% if reg.visit_status == '待就诊' %}
+                                    {% if reg.visit_status == '待就诊' and current_user.role == 'doctor' %}
                                     <a href="{{ url_for('medicalrecord.consult', registration_id=reg.registration_id) }}" class="btn btn-primary btn-sm">看诊</a>
+                                    {% elif current_user.role == 'admin' %}
+                                    <a href="{{ url_for('registration.registration_view_medical_record', registration_id=reg.registration_id) }}" class="btn btn-info btn-sm">查看</a>
                                     {% else %}
                                     <span class="text-muted">已完成</span>
                                     {% endif %}
