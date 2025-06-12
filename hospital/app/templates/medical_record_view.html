@@ -61,80 +61,49 @@
                 <thead>
                     <tr>
                         <th>药品名称</th>
-                        <th>价格</th>
-                        <th>医保报销比例</th>
-                        <th>通用用法</th>   {# 新增：通用用法 #}
-                        <th>通用频次</th>   {# 新增：通用频次 #}
-                        <th>支付状态</th>
+                        <th>通用用法</th>
+                        <th>通用频次</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {# 遍历 medications 列表，而不是 medical_record.medication_details #}
                     {% if medications %}
                         {% for detail in medications %}
                         <tr>
                             <td>{{ detail.drug.name if detail.drug else 'N/A' }}</td>
-                            <td>{{ "%.2f"|format(detail.drug.price) if detail.drug else 'N/A' }}</td>
-                            <td>{{ "%.2f"|format(detail.drug.insurance_rate * 100) if detail.drug else 'N/A' }}%</td>
-                            <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>   {# 显示通用用法 #}
-                            <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td> {# 显示通用频次 #}
-                            <td>
-                                {% set payment_status_for_med = '未知' %}
-                                {% for payment in payments %} {# 遍历传入的 payments 列表 #}
-                                    {% if payment.fee_type == '药品费' %}
-                                        {% set payment_status_for_med = payment.pay_status %}
-                                    {% endif %}
-                                {% endfor %}
-                                {{ payment_status_for_med }}
-                            </td>
+                            <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>
+                            <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="6">暂无用药明细。</td></tr>
+                        <tr><td colspan="3">暂无用药明细。</td></tr>
                     {% endif %}
                 </tbody>
             </table>
-
 
             <h5 class="mt-4">检查明细</h5>
             <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>检查项目</th>
-                        <th>价格</th>
-                        <th>医保报销比例</th>
-                        <th>支付状态</th>
+                        <th>检查结果</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {# 遍历 checks 列表，而不是 medical_record.check_details #}
                     {% if checks %}
                         {% for detail in checks %}
                         <tr>
-                            <td>{{ detail.check_item.name if detail.check_item else 'N/A' }}</td>
-                            <td>{{ "%.2f"|format(detail.check_item.price) if detail.check_item else 'N/A' }}</td>
-                            <td>{{ "%.2f"|format(detail.check_item.insurance_rate * 100) if detail.check_item else 'N/A' }}%</td>
-                            <td>
-                                {% set payment_status_for_check = '未知' %}
-                                {% for payment in payments %} {# 遍历传入的 payments 列表 #}
-                                    {% if payment.fee_type == '检查费' %}
-                                        {% set payment_status_for_check = payment.pay_status %}
-                                    {% endif %}
-                                {% endfor %}
-                                {{ payment_status_for_check }}
-                            </td>
+                            <td>{{ detail.result if detail.result else '未完成' }}</td>
                         </tr>
                         {% endfor %}
                     {% else %}
-                        <tr><td colspan="4">暂无检查明细。</td></tr>
+                        <tr><td>暂无检查明细。</td></tr>
                     {% endif %}
                 </tbody>
             </table>
 
         </div>
     </div>
-    {# 返回按钮指向 patient_profile，因为这是病人页面 #}
-    <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary mt-3">返回</a>
+    {# 返回按钮指向 registration.registration_list，因为这是挂号记录页面 #}
+    <a href="{{ url_for('registration.registration_list') }}" class="btn btn-secondary mt-3">返回</a>
 </div>
 </body>
 </html>
