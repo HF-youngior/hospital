@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, redirect, url_for, flash, request
+from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
 from app.models import MedicalRecord, Registration, Schedule, MedicationDetail, CheckDetail, Drug, CheckItem, db, Payment
@@ -296,3 +296,70 @@ def save():
         flash(f'保存失败: {str(e)}', 'danger')
         logger.error(f"General error: {str(e)}")
         return redirect(url_for('medicalrecord.consult', registration_id=registration_id))
+
+@medicalrecord.route('/medicalrecord/search_drugs')
+@role_required('doctor')
+@login_required
+def search_drugs():
+    search_type = request.args.get('type', 'name')
+    query = request.args.get('query', '')
+    registration_id = request.args.get('registration_id')
+    
+    if not query:
+        return jsonify({'drugs': []})
+    
+    try:
+        if search_type == 'name':
+            drugs = Drug.query.filter(Drug.name.ilike(f'%{query}%')).all()
+        else:  # search by ID
+            try:
+                drugs = Drug.query.filter_by(drug_id=int(query)).all()
+            except ValueError:
+                return jsonify({'error': '请输入有效的药品ID'}), 400
+        
+        return jsonify({
+            'drugs': [{
+                'drug_id': drug.drug_id,
+                'name': drug.name,
+                'specification': drug.specification,
+                'stock': drug.stock,
+                'price': float(drug.price),
+                'insurance_rate': float(drug.insurance_rate)
+            } for drug in drugs]
+        })
+    except Exception as e:
+        logger.error(f"Error searching drugs: {str(e)}")
+        return jsonify({'error': '搜索药品时发生错误'}), 500
+
+@medicalrecord.route('/medicalrecord/search_checks')
+@role_required('doctor')
+@login_required
+def search_checks():
+    search_type = request.args.get('type', 'name')
+    query = request.args.get('query', '')
+    registration_id = request.args.get('registration_id')
+    
+    if not query:
+        return jsonify({'checks': []})
+    
+    try:
+        if search_type == 'name':
+            checks = CheckItem.query.filter(CheckItem.name.ilike(f'%{query}%')).all()
+        else:  # search by ID
+            try:
+                checks = CheckItem.query.filter_by(item_id=int(query)).all()
+            except ValueError:
+                return jsonify({'error': '请输入有效的检查项目ID'}), 400
+        
+        return jsonify({
+            'checks': [{
+                'item_id': check.item_id,
+                'name': check.name,
+                'department': check.department,
+                'price': float(check.price),
+                'insurance_rate': float(check.insurance_rate)
+            } for check in checks]
+        })
+    except Exception as e:
+        logger.error(f"Error searching checks: {str(e)}")
+        return jsonify({'error': '搜索检查项目时发生错误'}), 500

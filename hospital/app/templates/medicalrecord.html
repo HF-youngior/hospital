@@ -108,61 +108,56 @@
                 <div class="row g-3 mt-4">
                     <div class="col-md-12">
                         <h6>用药明细</h6>
-                        <form id="drug-search-form" method="POST" action="{{ url_for('medicalrecord.consult', registration_id=registration_id) }}" class="row g-3 mb-3">
-                            {{ drug_form.hidden_tag() }}
-                            <input type="hidden" name="form_type" value="drug_search">
-                            <!-- 保留诊疗记录字段 -->
-                            <input type="hidden" name="chief_complaint" value="{{ form_data.chief_complaint or (record.chief_complaint if record else '') }}">
-                            <input type="hidden" name="present_illness" value="{{ form_data.present_illness or (record.present_illness if record else '') }}">
-                            <input type="hidden" name="past_history" value="{{ form_data.past_history or (record.past_history if record else '') }}">
-                            <input type="hidden" name="allergy_history" value="{{ form_data.allergy_history or (record.allergy_history if record else '') }}">
-                            <input type="hidden" name="physical_exam" value="{{ form_data.physical_exam or (record.physical_exam if record else '') }}">
-                            <input type="hidden" name="diagnosis" value="{{ form_data.diagnosis or (record.diagnosis if record else '') }}">
-                            <input type="hidden" name="suggestion" value="{{ form_data.suggestion or (record.suggestion if record else '') }}">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-4">
-                                {{ drug_form.search_type.label(class="form-label") }}
-                                {{ drug_form.search_type(class="form-select") }}
+                                <label class="form-label">搜索类型</label>
+                                <select class="form-select" id="drug-search-type">
+                                    <option value="name">按名称</option>
+                                    <option value="id">按ID</option>
+                                </select>
                             </div>
                             <div class="col-md-4">
-                                {{ drug_form.query.label(class="form-label") }}
-                                {{ drug_form.query(class="form-control", placeholder="输入药品名称或ID") }}
+                                <label class="form-label">搜索关键词</label>
+                                <input type="text" class="form-control" id="drug-search-query" placeholder="输入药品名称或ID">
                             </div>
                             <div class="col-md-4">
-                                {{ drug_form.submit(class="btn btn-primary w-100 mt-4", id="drug-search-submit") }}
+                                <button type="button" class="btn btn-primary w-100 mt-4" id="drug-search-button">搜索</button>
                             </div>
-                        </form>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>药品名称</th>
-                                    <th>规格</th>
-                                    <th>库存量</th>
-                                    <th>数量</th>
-                                    <th>操作</th>
-                                </tr>
-                            </thead>
-                            <tbody id="drug-list">
-                                {% for drug in drugs %}
-                                <tr class="{% if drug.stock == 0 %}disabled-row{% endif %}">
-                                    <td>{{ drug.name }}</td>
-                                    <td>{{ drug.specification }}</td>
-                                    <td>{{ drug.stock }}</td>
-                                    <td>
-                                        {% if drug.stock > 0 %}
-                                        <input type="number" class="form-control d-inline-block w-75" min="1" max="{{ drug.stock }}" value="1" id="drug-quantity-{{ drug.drug_id }}">
-                                        {% else %}
-                                        <span>售罄</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if drug.stock > 0 %}
-                                        <button type="button" class="btn btn-success btn-sm add-drug" data-id="{{ drug.drug_id }}">添加</button>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        </div>
+                        <div id="drug-search-results">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>药品名称</th>
+                                        <th>规格</th>
+                                        <th>库存量</th>
+                                        <th>数量</th>
+                                        <th>操作</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="drug-list">
+                                    {% for drug in drugs %}
+                                    <tr class="{% if drug.stock == 0 %}disabled-row{% endif %}">
+                                        <td>{{ drug.name }}</td>
+                                        <td>{{ drug.specification }}</td>
+                                        <td>{{ drug.stock }}</td>
+                                        <td>
+                                            {% if drug.stock > 0 %}
+                                            <input type="number" class="form-control d-inline-block w-75" min="1" max="{{ drug.stock }}" value="1" id="drug-quantity-{{ drug.drug_id }}">
+                                            {% else %}
+                                            <span>售罄</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if drug.stock > 0 %}
+                                            <button type="button" class="btn btn-success btn-sm add-drug" data-id="{{ drug.drug_id }}">添加</button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="no-medication" name="no_medication">
                             <label class="form-check-label" for="no-medication">无药品</label>
@@ -187,51 +182,46 @@
                 <div class="row g-3 mt-4">
                     <div class="col-md-12">
                         <h6>检查明细</h6>
-                        <form id="check-search-form" method="POST" action="{{ url_for('medicalrecord.consult', registration_id=registration_id) }}" class="row g-3 mb-3">
-                            {{ check_form.hidden_tag() }}
-                            <input type="hidden" name="form_type" value="check_search">
-                            <!-- 保留诊疗记录字段 -->
-                            <input type="hidden" name="chief_complaint" value="{{ form_data.chief_complaint or (record.chief_complaint if record else '') }}">
-                            <input type="hidden" name="present_illness" value="{{ form_data.present_illness or (record.present_illness if record else '') }}">
-                            <input type="hidden" name="past_history" value="{{ form_data.past_history or (record.past_history if record else '') }}">
-                            <input type="hidden" name="allergy_history" value="{{ form_data.allergy_history or (record.allergy_history if record else '') }}">
-                            <input type="hidden" name="physical_exam" value="{{ form_data.physical_exam or (record.physical_exam if record else '') }}">
-                            <input type="hidden" name="diagnosis" value="{{ form_data.diagnosis or (record.diagnosis if record else '') }}">
-                            <input type="hidden" name="suggestion" value="{{ form_data.suggestion or (record.suggestion if record else '') }}">
+                        <div class="row g-3 mb-3">
                             <div class="col-md-4">
-                                {{ check_form.search_type.label(class="form-label") }}
-                                {{ check_form.search_type(class="form-select") }}
+                                <label class="form-label">搜索类型</label>
+                                <select class="form-select" id="check-search-type">
+                                    <option value="name">按名称</option>
+                                    <option value="id">按ID</option>
+                                </select>
                             </div>
                             <div class="col-md-4">
-                                {{ check_form.query.label(class="form-label") }}
-                                {{ check_form.query(class="form-control", placeholder="输入检查项目名称或ID") }}
+                                <label class="form-label">搜索关键词</label>
+                                <input type="text" class="form-control" id="check-search-query" placeholder="输入检查项目名称或ID">
                             </div>
                             <div class="col-md-4">
-                                {{ check_form.submit(class="btn btn-primary w-100 mt-4", id="check-search-submit") }}
+                                <button type="button" class="btn btn-primary w-100 mt-4" id="check-search-button">搜索</button>
                             </div>
-                        </form>
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>选择</th>
-                                    <th>检查项目</th>
-                                    <th>科室</th>
-                                    <th>价格</th>
-                                </tr>
-                            </thead>
-                            <tbody id="check-list">
-                                {% for item in check_items %}
-                                <tr>
-                                    <td>
-                                        <input type="checkbox" class="check-item" data-id="{{ item.item_id }}" {% if item.item_id in selected_checks|map(attribute='item_id')|list %}checked{% endif %}>
-                                    </td>
-                                    <td>{{ item.name }}</td>
-                                    <td>{{ item.department }}</td>
-                                    <td>{{ item.price }} 元</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                        </div>
+                        <div id="check-search-results">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>选择</th>
+                                        <th>检查项目</th>
+                                        <th>科室</th>
+                                        <th>价格</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="check-list">
+                                    {% for item in check_items %}
+                                    <tr>
+                                        <td>
+                                            <input type="checkbox" class="check-item" data-id="{{ item.item_id }}" {% if item.item_id in selected_checks|map(attribute='item_id')|list %}checked{% endif %}>
+                                        </td>
+                                        <td>{{ item.name }}</td>
+                                        <td>{{ item.department }}</td>
+                                        <td>{{ item.price }} 元</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
                         <div class="form-check">
                             <input type="checkbox" class="form-check-input" id="no-check" name="no_check">
                             <label class="form-check-label" for="no-check">无检查项目</label>
@@ -368,49 +358,139 @@
     document.addEventListener('DOMContentLoaded', function () {
         const selectedDrugs = [];
         const selectedChecks = [];
+        const registrationId = '{{ registration_id }}';
 
-        // 初始化已选药品
-        document.querySelectorAll('#selected-drugs li').forEach(item => {
-            selectedDrugs.push({
-                id: item.dataset.id,
-                quantity: parseInt(item.dataset.quantity)
-            });
+        // 药品搜索
+        document.getElementById('drug-search-button').addEventListener('click', function() {
+            const searchType = document.getElementById('drug-search-type').value;
+            const query = document.getElementById('drug-search-query').value;
+            
+            fetch(`/medicalrecord/search_drugs?type=${searchType}&query=${encodeURIComponent(query)}&registration_id=${registrationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const drugList = document.getElementById('drug-list');
+                    drugList.innerHTML = '';
+                    
+                    data.drugs.forEach(drug => {
+                        const row = document.createElement('tr');
+                        row.className = drug.stock === 0 ? 'disabled-row' : '';
+                        row.innerHTML = `
+                            <td>${drug.name}</td>
+                            <td>${drug.specification}</td>
+                            <td>${drug.stock}</td>
+                            <td>
+                                ${drug.stock > 0 ? 
+                                    `<input type="number" class="form-control d-inline-block w-75" min="1" max="${drug.stock}" value="1" id="drug-quantity-${drug.drug_id}">` :
+                                    '<span>售罄</span>'}
+                            </td>
+                            <td>
+                                ${drug.stock > 0 ? 
+                                    `<button type="button" class="btn btn-success btn-sm add-drug" data-id="${drug.drug_id}">添加</button>` :
+                                    ''}
+                            </td>
+                        `;
+                        drugList.appendChild(row);
+                    });
+                    
+                    // 重新绑定添加药品按钮事件
+                    bindAddDrugEvents();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('搜索药品时发生错误');
+                });
         });
 
-        // 初始化已选检查项目
-        document.querySelectorAll('#selected-checks li').forEach(item => {
-            selectedChecks.push({
-                id: item.dataset.id
-            });
+        // 检查项目搜索
+        document.getElementById('check-search-button').addEventListener('click', function() {
+            const searchType = document.getElementById('check-search-type').value;
+            const query = document.getElementById('check-search-query').value;
+            
+            fetch(`/medicalrecord/search_checks?type=${searchType}&query=${encodeURIComponent(query)}&registration_id=${registrationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const checkList = document.getElementById('check-list');
+                    checkList.innerHTML = '';
+                    
+                    data.checks.forEach(check => {
+                        const row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>
+                                <input type="checkbox" class="check-item" data-id="${check.item_id}" 
+                                    ${selectedChecks.some(c => c.id === check.item_id) ? 'checked' : ''}>
+                            </td>
+                            <td>${check.name}</td>
+                            <td>${check.department}</td>
+                            <td>${check.price} 元</td>
+                        `;
+                        checkList.appendChild(row);
+                    });
+                    
+                    // 重新绑定检查项目复选框事件
+                    bindCheckItemEvents();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('搜索检查项目时发生错误');
+                });
         });
 
-        // 添加药品
-        document.querySelectorAll('.add-drug').forEach(button => {
-            button.addEventListener('click', function (e) {
-                e.preventDefault(); // 阻止默认行为
-                const drugId = this.dataset.id;
-                const quantityInput = document.getElementById(`drug-quantity-${drugId}`);
-                const quantity = parseInt(quantityInput.value);
-                const max = parseInt(quantityInput.max);
-                const drugName = this.closest('tr').querySelector('td').textContent;
+        // 绑定添加药品按钮事件
+        function bindAddDrugEvents() {
+            document.querySelectorAll('.add-drug').forEach(button => {
+                button.addEventListener('click', function() {
+                    const drugId = this.dataset.id;
+                    const quantityInput = document.getElementById(`drug-quantity-${drugId}`);
+                    const quantity = parseInt(quantityInput.value);
+                    const max = parseInt(quantityInput.max);
+                    const drugName = this.closest('tr').querySelector('td').textContent;
 
-                if (quantity <= 0 || quantity > max) {
-                    alert(`数量必须在 1 到 ${max} 之间`);
-                    return;
-                }
+                    if (quantity <= 0 || quantity > max) {
+                        alert(`数量必须在 1 到 ${max} 之间`);
+                        return;
+                    }
 
-                const existingIndex = selectedDrugs.findIndex(d => d.id === drugId);
-                if (existingIndex !== -1) {
-                    selectedDrugs[existingIndex].quantity += quantity;
-                } else {
-                    selectedDrugs.push({ id: drugId, quantity });
-                }
+                    const existingIndex = selectedDrugs.findIndex(d => d.id === drugId);
+                    if (existingIndex !== -1) {
+                        selectedDrugs[existingIndex].quantity += quantity;
+                    } else {
+                        selectedDrugs.push({ id: drugId, quantity });
+                    }
 
-                updateSelectedDrugs();
-                quantityInput.value = 1;
-                document.getElementById('no-medication').checked = false;
+                    updateSelectedDrugs();
+                    quantityInput.value = 1;
+                    document.getElementById('no-medication').checked = false;
+                });
             });
-        });
+        }
+
+        // 绑定检查项目复选框事件
+        function bindCheckItemEvents() {
+            document.querySelectorAll('.check-item').forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const itemId = this.dataset.id;
+                    const itemName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
+                    
+                    if (this.checked) {
+                        if (!selectedChecks.find(c => c.id === itemId)) {
+                            selectedChecks.push({ id: itemId });
+                        }
+                    } else {
+                        const index = selectedChecks.findIndex(c => c.id === itemId);
+                        if (index !== -1) {
+                            selectedChecks.splice(index, 1);
+                        }
+                    }
+                    
+                    updateSelectedChecks();
+                    document.getElementById('no-check').checked = false;
+                });
+            });
+        }
+
+        // 初始化绑定事件
+        bindAddDrugEvents();
+        bindCheckItemEvents();
 
         // 调整药品数量
         document.querySelector('#selected-drugs').addEventListener('click', function (e) {
@@ -453,27 +533,6 @@
                     updateSelectedDrugs();
                 }
             }
-        });
-
-        // 添加/移除检查项目
-        document.querySelectorAll('.check-item').forEach(checkbox => {
-            checkbox.addEventListener('change', function (e) {
-                e.preventDefault(); // 阻止默认行为
-                const itemId = this.dataset.id;
-                const itemName = this.closest('tr').querySelector('td:nth-child(2)').textContent;
-                if (this.checked) {
-                    if (!selectedChecks.find(c => c.id === itemId)) {
-                        selectedChecks.push({ id: itemId });
-                    }
-                } else {
-                    const index = selectedChecks.findIndex(c => c.id === itemId);
-                    if (index !== -1) {
-                        selectedChecks.splice(index, 1);
-                    }
-                }
-                updateSelectedChecks();
-                document.getElementById('no-check').checked = false;
-            });
         });
 
         // 移除检查项目
@@ -572,7 +631,7 @@
             }
         }
 
-        // 监听“无药品”复选框
+        // 监听"无药品"复选框
         document.getElementById('no-medication').addEventListener('change', function (e) {
             e.preventDefault(); // 阻止默认行为
             if (this.checked) {
@@ -581,7 +640,7 @@
             }
         });
 
-        // 监听“无检查项目”复选框
+        // 监听"无检查项目"复选框
         document.getElementById('no-check').addEventListener('change', function (e) {
             e.preventDefault(); // 阻止默认行为
             if (this.checked) {
@@ -592,12 +651,6 @@
         });
 
         // 调试：监听表单提交
-        document.getElementById('drug-search-form').addEventListener('submit', function (e) {
-            console.log('Drug search form submitted');
-        });
-        document.getElementById('check-search-form').addEventListener('submit', function (e) {
-            console.log('Check search form submitted');
-        });
         document.getElementById('medical-record-form').addEventListener('submit', function (e) {
             console.log('Medical record form submitted');
         });
