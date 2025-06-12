@@ -1,3 +1,4 @@
+
 from app import create_app, db
 from app.models import User, Patient, Doctor, Schedule, Registration, Payment, MedicalRecord, MedicationDetail, \
     CheckDetail, Drug, CheckItem
@@ -263,12 +264,14 @@ with app.app_context():
     # 创建用药和检查明细
     medication_detail = MedicationDetail(
         registration_id=registrations[0].registration_id,
-        drug_id=drugs[0].drug_id
+        drug_id=drugs[0].drug_id,
+        quantity=1  # 新增字段
     )
     check_detail = CheckDetail(
         registration_id=registrations[0].registration_id,
         item_id=check_items[0].item_id,
-        result='未完成'
+        result='未完成',
+        quantity=1  # 新增字段
     )
     db.session.add_all([medication_detail, check_detail])
     db.session.flush()
@@ -325,7 +328,6 @@ with app.app_context():
         conn.execute(text(drop_trigger_sql))
         conn.commit()
 
-
     # 创建排班冲突触发器
     create_trg_check_schedule_duplicate_sql = """
     CREATE TRIGGER trg_check_schedule_duplicate
@@ -347,7 +349,7 @@ with app.app_context():
             ROLLBACK TRANSACTION;
             RETURN;
         END
-    
+
         -- 不同医生在同一天同一时间段同一诊室，冲突
         IF EXISTS (
             SELECT 1
@@ -412,8 +414,8 @@ with app.app_context():
             dr.name AS drug_name,
             dr.specification,
             dr.price,
-            1 AS quantity,
-            dr.price AS subtotal,
+            md.quantity,  -- 更新为使用 quantity 字段
+            dr.price * md.quantity AS subtotal,
             dr.insurance_rate
         FROM medication_detail md
         JOIN drug dr ON md.drug_id = dr.drug_id
@@ -424,6 +426,8 @@ with app.app_context():
             cd.check_id,
             ci.name AS item_name,
             ci.price,
+            cd.quantity,  -- 更新为使用 quantity 字段
+            ci.price * cd.quantity AS subtotal,
             ci.insurance_rate
         FROM check_detail cd
         JOIN check_item ci ON cd.item_id = ci.item_id
