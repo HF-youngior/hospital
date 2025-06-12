@@ -153,6 +153,7 @@ with app.app_context():
             db.session.add(reg)
             db.session.flush()
             registrations.append(reg)
+           
 
     # 创建诊疗记录
     medical_record = MedicalRecord(
@@ -357,13 +358,24 @@ with app.app_context():
 
     print("生成电子发票SP已经生成")
 
-    # 为所有已就诊的挂号生成诊疗记录、用药明细和检查明细
-    drugs = Drug.query.all()
-    check_items = CheckItem.query.all()
+    # 定义科室-药品/检查项目映射
+    department_drugs = {
+        '儿科': ['阿莫西林', '布洛芬', '维生素C'],
+        '外科': ['阿司匹林', '头孢克洛', '地塞米松'],
+        '内科': ['头孢克洛', '氯雷他定', '阿莫西林'],
+        '骨科': ['布洛芬', '地塞米松'],
+    }
+    department_checks = {
+        '儿科': ['血常规', '心电图'],
+        '外科': ['CT', 'B超', '胸片'],
+        '内科': ['血常规', '尿常规', '心电图'],
+        '骨科': ['CT', 'B超'],
+    }
     for reg in registrations:
         if reg.visit_status == '已就诊':
             # 检查是否已有病历，避免重复
             if not MedicalRecord.query.filter_by(registration_id=reg.registration_id).first():
+                department = reg.schedule.doctor.department if reg.schedule and reg.schedule.doctor else None
                 record = MedicalRecord(
                     registration_id=reg.registration_id,
                     visit_time=datetime.now(),
@@ -377,22 +389,28 @@ with app.app_context():
                 )
                 db.session.add(record)
                 db.session.flush()
-                # 随机生成1-2个用药明细
-                for drug in random.sample(drugs, min(2, len(drugs))):
-                    med_detail = MedicationDetail(
-                        registration_id=reg.registration_id,
-                        drug_id=drug.drug_id,
-                        quantity=random.randint(1, 3)
-                    )
-                    db.session.add(med_detail)
-                # 随机生成1-2个检查明细
-                for item in random.sample(check_items, min(2, len(check_items))):
-                    check_detail = CheckDetail(
-                        registration_id=reg.registration_id,
-                        item_id=item.item_id,
-                        result=random.choice(['正常', '轻度异常', '需复查']),
-                        quantity=1
-                    )
-                    db.session.add(check_detail)
+                # 按科室过滤药品
+                drug_names = department_drugs.get(department, [d.name for d in drugs])
+                dept_drugs = [d for d in drugs if d.name in drug_names]
+                if dept_drugs:
+                    for drug in random.sample(dept_drugs, min(2, len(dept_drugs))):
+                        med_detail = MedicationDetail(
+                            registration_id=reg.registration_id,
+                            drug_id=drug.drug_id,
+                            quantity=random.randint(1, 3)
+                        )
+                        db.session.add(med_detail)
+                # 按科室过滤检查项目
+                check_names = department_checks.get(department, [c.name for c in check_items])
+                dept_checks = [c for c in check_items if c.name in check_names]
+                if dept_checks:
+                    for item in random.sample(dept_checks, min(2, len(dept_checks))):
+                        check_detail = CheckDetail(
+                            registration_id=reg.registration_id,
+                            item_id=item.item_id,
+                            result=random.choice(['正常', '轻度异常', '需复查']),
+                            quantity=1
+                        )
+                        db.session.add(check_detail)
     db.session.commit()
     print("所有已就诊挂号已补全病历、用药和检查明细！")
