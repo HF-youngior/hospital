@@ -33,7 +33,13 @@
                                 <td>{{ reg.registration_id }}</td>
                                 <td>{{ reg.patient_id }}</td>
                                 <td>{{ reg.patient.name }}</td>
-                                <td>{{ reg.schedule.department if reg.schedule else '未知科室' }}</td>
+                                <td>
+                                    {% if reg.schedule and reg.schedule.doctor %}
+                                        {{ reg.schedule.doctor.department }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
                                 <td>{{ reg.schedule.doctor.name if reg.schedule and reg.schedule.doctor else '未知医生' }}</td>
                                 <td>{{ reg.schedule.date if reg.schedule else '未知日期' }}</td>
                                 <td>{{ reg.schedule.time_slot if reg.schedule else '未知时间段' }}</td>
