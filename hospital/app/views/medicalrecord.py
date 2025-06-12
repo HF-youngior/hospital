@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import login_required, current_user
 from app.views.decorators import role_required
-from app.models import MedicalRecord, Registration, Schedule, MedicationDetail, CheckDetail, Drug, CheckItem, db, Payment
+from app.models import MedicalRecord, Registration, Schedule, MedicationDetail, CheckDetail, Drug, CheckItem, db, Payment, Patient, Doctor
 from datetime import datetime, date
 from sqlalchemy.exc import SQLAlchemyError
 from app.views.inventory import SearchForm
@@ -19,30 +19,26 @@ medicalrecord = Blueprint('medicalrecord', __name__)
 def list():
     search_patient = request.args.get('search_patient', '').strip()
     search_date = request.args.get('search_date', '').strip()
+    # 多表联合查询
+    query = Registration.query.join(Patient, Registration.patient_id == Patient.patient_id)
+    query = query.join(Schedule, Registration.schedule_id == Schedule.schedule_id)
+    # 只显示未取消的挂号
+    query = query.filter(Registration.visit_status != '已取消')
+    # 管理员可看全部，医生只看自己，患者无权访问
     if current_user.role == 'doctor' and current_user.doctor:
-        schedules = current_user.doctor.schedules.filter(
-            Schedule.date == date.today()
-        )
-        registrations = Registration.query.filter(
-            Registration.schedule_id.in_([s.schedule_id for s in schedules]),
-            Registration.visit_status != '已取消'
-        )
-    elif current_user.role == 'admin':
-        # 管理员可查看所有挂号记录
-        registrations = Registration.query.filter(Registration.visit_status != '已取消')
-    else:
-        registrations = Registration.query.filter(False)  # 空结果
-
-    # 支持按患者姓名/ID和日期联合查询
+        query = query.join(Doctor, Schedule.doctor_id == Doctor.doctor_id)
+        query = query.filter(Doctor.doctor_id == current_user.doctor.doctor_id)
+    elif current_user.role != 'admin':
+        query = query.filter(False)  # 只允许管理员和医生
+    # 支持患者ID或姓名联合查询
     if search_patient:
         if search_patient.isdigit():
-            registrations = registrations.filter(Registration.patient_id == int(search_patient))
+            query = query.filter(Patient.patient_id == int(search_patient))
         else:
-            from app.models import Patient
-            registrations = registrations.join(Patient).filter(Patient.name.contains(search_patient))
+            query = query.filter(Patient.name.contains(search_patient))
     if search_date:
-        registrations = registrations.join(Schedule).filter(Schedule.date == search_date)
-    registrations = registrations.all()
+        query = query.filter(Schedule.date == search_date)
+    registrations = query.order_by(Schedule.date.desc(), Schedule.time_slot).all()
     return render_template('medicalrecord.html', registrations=registrations, search_patient=search_patient, search_date=search_date)
 
 @medicalrecord.route('/medicalrecord/consult/<int:registration_id>', methods=['GET', 'POST'])
