@@ -2,148 +2,101 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <title>就诊详情 - 医院信息管理系统</title>
+    <title>诊疗记录 - 医院信息管理系统</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
 </head>
 <body>
 <div class="container mt-5">
-    <h2>就诊详情</h2>
-
-    <!-- 挂号信息 -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>挂号信息</h5>
-        </div>
+    <h2>诊疗记录</h2>
+    <div class="card mt-4">
         <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">挂号ID：</div>
-                <div class="col-md-9">{{ registration.registration_id }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">挂号时间：</div>
-                <div class="col-md-9">{{ registration.reg_time.strftime('%Y-%m-%d %H:%M') }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">医生：</div>
-                <div class="col-md-9">{{ registration.schedule.doctor.name }}（{{ registration.schedule.doctor.title }}）</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">科室：</div>
-                <div class="col-md-9">{{ registration.schedule.doctor.department }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">状态：</div>
-                <div class="col-md-9">{{ registration.visit_status }}</div>
-            </div>
-        </div>
-    </div>
+            <h5 class="card-title">患者ID: {{ registration.patient_id }}</h5>
+            <table class="table table-bordered">
+                <tbody>
+                    <tr>
+                        <th>挂号ID</th>
+                        <td>{{ registration.registration_id }}</td>
+                    </tr>
+                    {% if medical_record %}
+                    <tr>
+                        <th>主诉</th>
+                        <td>{{ medical_record.chief_complaint }}</td>
+                    </tr>
+                    <tr>
+                        <th>现病史</th>
+                        <td>{{ medical_record.present_illness }}</td>
+                    </tr>
+                    <tr>
+                        <th>既往史</th>
+                        <td>{{ medical_record.past_history }}</td>
+                    </tr>
+                    <tr>
+                        <th>过敏史</th>
+                        <td>{{ medical_record.allergy_history }}</td>
+                    </tr>
+                    <tr>
+                        <th>体格检查</th>
+                        <td>{{ medical_record.physical_exam }}</td>
+                    </tr>
+                    <tr>
+                        <th>诊断结论</th>
+                        <td>{{ medical_record.diagnosis }}</td>
+                    </tr>
+                    <tr>
+                        <th>建议</th>
+                        <td>{{ medical_record.suggestion }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="2" class="text-center text-muted">该次就诊暂无详细诊疗记录。</td>
+                    </tr>
+                    {% endif %}
+                </tbody>
+            </table>
 
-    <!-- 诊疗记录 -->
-    {% if medical_record %}
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5>诊疗记录</h5>
-        </div>
-        <div class="card-body">
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">就诊时间：</div>
-                <div class="col-md-9">{{ medical_record.visit_time.strftime('%Y-%m-%d %H:%M') }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">主诉：</div>
-                <div class="col-md-9">{{ medical_record.chief_complaint or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">现病史：</div>
-                <div class="col-md-9">{{ medical_record.present_illness or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">既往史：</div>
-                <div class="col-md-9">{{ medical_record.past_history or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">过敏史：</div>
-                <div class="col-md-9">{{ medical_record.allergy_history or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">体检：</div>
-                <div class="col-md-9">{{ medical_record.physical_exam or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">诊断：</div>
-                <div class="col-md-9">{{ medical_record.diagnosis or '无' }}</div>
-            </div>
-            <div class="row mb-3">
-                <div class="col-md-3 fw-bold">建议：</div>
-                <div class="col-md-9">{{ medical_record.suggestion or '无' }}</div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-
-    <!-- 用药详情 -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>用药详情</h5>
-        </div>
-        <div class="card-body">
-            {% if medications %}
-            <table class="table table-striped">
+            <h5 class="mt-4">用药明细</h5>
+            <table class="table table-bordered">
                 <thead>
                     <tr>
                         <th>药品名称</th>
-                        <th>规格</th>
-                        <th>价格</th>
-                        <th>支付状态</th>
+                        <th>通用用法</th>
+                        <th>通用频次</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for med in medications %}
-                    <tr>
-                        <td>{{ med.drug.name }}</td>
-                        <td>{{ med.drug.specification }}</td>
-                        <td>{{ med.drug.price }} 元</td>
-                        <td>{{ '已支付' if med.is_paid else '未支付' }}</td>
-                    </tr>
-                    {% endfor %}
+                    {% if medications %}
+                        {% for detail in medications %}
+                        <tr>
+                            <td>{{ detail.drug.name if detail.drug else 'N/A' }}</td>
+                            <td>{{ detail.drug.usage if detail.drug else 'N/A' }}</td>
+                            <td>{{ detail.drug.frequency if detail.drug else 'N/A' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="3">暂无用药明细。</td></tr>
+                    {% endif %}
                 </tbody>
             </table>
-            {% else %}
-            <p>无用药记录。</p>
-            {% endif %}
-        </div>
-    </div>
 
-    <!-- 检查详情 -->
-    <div class="card mb-4">
-        <div class="card-header">
-            <h5>检查详情</h5>
-        </div>
-        <div class="card-body">
-            {% if checks %}
-            <table class="table table-striped">
+            <h5 class="mt-4">检查明细</h5>
+            <table class="table table-bordered">
                 <thead>
                     <tr>
-                        <th>检查项目</th>
-                        <th>价格</th>
-                        <th>结果</th>
-                        <th>支付状态</th>
+                        <th>检查结果</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {% for check in checks %}
-                    <tr>
-                        <td>{{ check.check_item.name }}</td>
-                        <td>{{ check.check_item.price }} 元</td>
-                        <td>{{ check.result or '未完成' }}</td>
-                        <td>{{ '已支付' if check.is_paid else '未支付' }}</td>
-                    </tr>
-                    {% endfor %}
+                    {% if checks %}
+                        {% for detail in checks %}
+                        <tr>
+                            <td>{{ detail.result if detail.result else '未完成' }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td>暂无检查明细。</td></tr>
+                    {% endif %}
                 </tbody>
             </table>
-            {% else %}
-            <p>无检查记录。</p>
-            {% endif %}
         </div>
     </div>
 
@@ -188,6 +141,7 @@
     <a href="{{ url_for('invoice.generate', registration_id=registration.registration_id) }}" class="btn btn-success">
         生成电子发票
     </a>
+    <a href="{{ url_for('patient.patient_profile') }}" class="btn btn-secondary mt-3">返回</a>
 </div>
 </body>
 </html>
