@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+
+{% block title %}新增药品{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>新增药品</h2>
+    <form method="POST" action="{{ url_for('inventory.add_drug') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.specification.label(class="form-label") }}
+            {{ form.specification(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.price.label(class="form-label") }}
+            {{ form.price(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.usage.label(class="form-label") }}
+            {{ form.usage(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.frequency.label(class="form-label") }}
+            {{ form.frequency(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.stock.label(class="form-label") }}
+            {{ form.stock(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.status.label(class="form-label") }}
+            {{ form.status(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.insurance_rate.label(class="form-label") }}
+            {{ form.insurance_rate(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.remark.label(class="form-label") }}
+            {{ form.remark(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('inventory.drug_list') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
