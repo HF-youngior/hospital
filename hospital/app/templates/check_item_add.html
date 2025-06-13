@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}新增检查项目{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>新增检查项目</h2>
+    <form method="POST" action="{{ url_for('inventory.add_check_item') }}">
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+            {{ form.name.label(class="form-label") }}
+            {{ form.name(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.price.label(class="form-label") }}
+            {{ form.price(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.department.label(class="form-label") }}
+            {{ form.department(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.insurance_rate.label(class="form-label") }}
+            {{ form.insurance_rate(class="form-control") }}
+        </div>
+        <div class="mb-3">
+            {{ form.submit(class="btn btn-primary") }}
+            <a href="{{ url_for('inventory.check_item_list') }}" class="btn btn-secondary">取消</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

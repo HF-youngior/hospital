@@ -27,6 +27,13 @@
         </div>
     </form>
 
+    <!-- 新增按钮（仅管理员可见） -->
+    {% if current_user.role == 'admin' %}
+    <div class="mb-3">
+        <a href="{{ url_for('inventory.add_drug') }}" class="btn btn-success">新增药品</a>
+    </div>
+    {% endif %}
+
     <!-- 药品列表 -->
     <table class="table table-striped">
         <thead>
@@ -37,8 +44,6 @@
                 <th>价格</th>
                 <th>用法</th>
                 <th>频率</th>
-                <!-- ========== 核心修改点 1 ========== -->
-                <!-- 只有管理员或医生能看到库存表头 -->
                 {% if current_user.role in ['admin', 'doctor'] %}
                 <th>库存</th>
                 {% endif %}
@@ -59,8 +64,6 @@
                 <td>{{ "%.2f"|format(drug.price) }} 元</td>
                 <td>{{ drug.usage }}</td>
                 <td>{{ drug.frequency }}</td>
-                <!-- ========== 核心修改点 2 ========== -->
-                <!-- 只有管理员或医生能看到库存数据 -->
                 {% if current_user.role in ['admin', 'doctor'] %}
                 <td>{{ drug.stock }}</td>
                 {% endif %}
@@ -74,14 +77,12 @@
                 {% endif %}
             </tr>
             {% else %}
-            <!-- ========== 核心修改点 3 ========== -->
-            <!-- 动态计算 colspan 以保证表格布局正确 -->
-            {% set col_count = 9 %}  <!-- 患者看到的基础列数 -->
+            {% set col_count = 9 %}
             {% if current_user.role in ['admin', 'doctor'] %}
-                {% set col_count = col_count + 1 %} <!-- 为库存列+1 -->
+                {% set col_count = col_count + 1 %}
             {% endif %}
             {% if current_user.role == 'admin' %}
-                {% set col_count = col_count + 1 %} <!-- 为操作列+1 -->
+                {% set col_count = col_count + 1 %}
             {% endif %}
             <tr>
                 <td colspan="{{ col_count }}">暂无药品记录。</td>

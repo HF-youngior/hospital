@@ -117,3 +117,53 @@ def edit_check_item(item_id):
             flash(f'更新失败：{str(e)}', 'danger')
 
     return render_template('check_item_edit.html', form=form, check_item=check_item)
+# 新增药品（仅管理员）
+@inventory.route('/drug/add', methods=['GET', 'POST'])
+@role_required('admin')
+@login_required
+def add_drug():
+    form = DrugForm()
+    if form.validate_on_submit():
+        drug = Drug(
+            name=form.name.data,
+            specification=form.specification.data,
+            price=form.price.data,
+            usage=form.usage.data,
+            frequency=form.frequency.data,
+            stock=form.stock.data,
+            remark=form.remark.data,
+            status=form.status.data,
+            insurance_rate=form.insurance_rate.data
+        )
+        try:
+            db.session.add(drug)
+            db.session.commit()
+            flash('药品添加成功！', 'success')
+            return redirect(url_for('inventory.drug_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'添加失败：{str(e)}', 'danger')
+    return render_template('drug_add.html', form=form)
+
+# 新增检查项目（仅管理员）
+@inventory.route('/check_item/add', methods=['GET', 'POST'])
+@role_required('admin')
+@login_required
+def add_check_item():
+    form = CheckItemForm()
+    if form.validate_on_submit():
+        check_item = CheckItem(
+            name=form.name.data,
+            price=form.price.data,
+            department=form.department.data,
+            insurance_rate=form.insurance_rate.data
+        )
+        try:
+            db.session.add(check_item)
+            db.session.commit()
+            flash('检查项目添加成功！', 'success')
+            return redirect(url_for('inventory.check_item_list'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'添加失败：{str(e)}', 'danger')
+    return render_template('check_item_add.html', form=form)
