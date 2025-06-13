@@ -12,7 +12,31 @@ patient_bp = Blueprint('patient', __name__, url_prefix='/patient')
 @role_required('admin')
 @login_required
 def patient_list():
-    patients = Patient.query.all()
+    # 获取搜索参数
+    search = request.args.get('search', '').strip()
+    id_card = request.args.get('id_card', '').strip()
+    insurance_card = request.args.get('insurance_card', '').strip()
+
+    # 构建查询
+    query = Patient.query
+
+    # 应用搜索条件
+    if search:
+        if search.isdigit():
+            # 如果是数字，尝试按ID搜索
+            query = query.filter(Patient.patient_id == int(search))
+        else:
+            # 否则按姓名搜索
+            query = query.filter(Patient.name.contains(search))
+    
+    if id_card:
+        query = query.filter(Patient.id_card.contains(id_card))
+    
+    if insurance_card:
+        query = query.filter(Patient.insurance_card.contains(insurance_card))
+
+    # 执行查询
+    patients = query.all()
     return render_template('patient_list.html', patients=patients)
 
 @patient_bp.route('/add', methods=['GET', 'POST'])
